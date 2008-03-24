@@ -1,10 +1,11 @@
+<?php if ( bb_is_user_logged_in() ) { header("Location:".bb_get_option('uri')); } ?>
+
 <?php bb_get_header(); ?>
 
 <h3 class="bbcrumb"><a href="<?php bb_option('uri'); ?>"><?php bb_option('name'); ?></a> &raquo; <?php _e('Register'); ?></h3>
 
 <h2 id="register"><?php _e('Registration'); ?></h2>
 
-<?php if ( !bb_is_user_logged_in() ) : ?>
 <form method="post" action="<?php bb_option('uri'); ?>register.php">
 <fieldset>
 <legend><?php _e('Profile Information'); ?></legend>
@@ -65,8 +66,5 @@ if ( $terms_cond === false ) {
 </fieldset>
 
 </form>
-<?php else : ?>
-<p><?php _e('You&#8217;re already logged in, why do you need to register?'); ?></p>
-<?php endif; ?>
 
 <?php bb_get_footer(); ?>

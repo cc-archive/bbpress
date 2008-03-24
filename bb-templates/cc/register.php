@@ -9,7 +9,7 @@
 <fieldset>
 <legend><?php _e('Profile Information'); ?></legend>
 <p><?php _e("Your password will be emailed to the address you provide."); ?></p>
-<table width="100%">
+<table>
 <?php if ( $user_safe === false ) : ?>
 <tr class="error">
 <th scope="row"><?php _e('Username:'); ?></th>
@@ -55,13 +55,15 @@ if ( $terms_cond === false ) {
 </tr>
 </table>
 <p><sup>*</sup><?php _e('These items are <span class="required">required</span>.') ?></p>
-</fieldset>
 
 <?php do_action('extra_profile_info', $user); ?>
 
 <p class="submit">
   <input type="submit" name="Submit" value="<?php echo attribute_escape( __('Register &raquo;') ); ?>" />
 </p>
+
+</fieldset>
+
 </form>
 <?php else : ?>
 <p><?php _e('You&#8217;re already logged in, why do you need to register?'); ?></p>

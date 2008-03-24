@@ -365,12 +365,12 @@ form.login input {
 
 fieldset { 
 	border-top: 3px double #ccc;
-	border-bottom: 1px solid #ccc;
+	border-bottom: none;
 	border-left: none;
 	border-right: none;
 	padding: 10px 0 10px 10px; 
 	margin-bottom: 15px;
-	width: 720px;
+	width: 90%;
 }
 
 legend { 

@@ -41,11 +41,11 @@ endif;
 
 <div style='margin: 2ex;'>
 <?php
-_e('<strong>IMPORTANT copyright information</strong></span>: All content submitted to this forum is released under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>. By checking the following box you agree to this condition of use.  If you are not willing to release all content you submit under this license then you should not register.');
+_e('<strong>IMPORTANT</strong> copyright information: All content submitted to this forum is released under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>. By checking the following box you agree to this condition of use.  If you are not willing to release all content you submit under this license then you should not register.');
 ?>
 </div>
 <div style='margin: 2ex;'>
-    <input type="checkbox" name="terms_cond" /><sup>*</sup>:
+    <input type="checkbox" name="terms_cond" />:
 <?php
 _e('I agree to release <span style="text-decoration: underline;">anything</span> I submit to this forum under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>.');
 if ( $terms_cond === false ) {

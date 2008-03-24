@@ -32,7 +32,7 @@ if ($_POST) :
 	if ( empty($user_login) || bb_user_exists($user_login) )
 		$user_safe = false;
 	
-	if ( $user_login && $user_safe && $user_email && !$bad_input && $terms_cond) :
+	if ( $user_login && $user_safe && $user_email && !$bad_input && $_globals['terms_cond']) :
 		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) :
 			foreach( $profile_info_keys as $key => $label )
 				if ( strpos($key, 'user_') !== 0 && $$key !== '' )

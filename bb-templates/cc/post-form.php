@@ -7,7 +7,7 @@
 <?php endif; do_action( 'post_form_pre_post' ); ?>
 <p>
 	<label for="post_content"><?php _e('Post:'); ?>
-		<textarea name="post_content" cols="50" rows="8" id="post_content" tabindex="3"></textarea>
+		<textarea name="post_content" rows="8" id="post_content" tabindex="3"></textarea>
 	</label>
 </p>
 <?php if ( !is_topic() ) : ?>

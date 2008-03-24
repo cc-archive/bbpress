@@ -36,26 +36,23 @@ endif;
 ?></td>
 </tr>
 <?php endforeach; endif; ?>
-<tr>
-    <td colspan="2">
+</table>
+<p><sup>*</sup><?php _e('These items are <span class="required">required</span>.') ?></p>
+
+<div style='margin: 2ex;'>
 <?php
-	_e('<strong>IMPORTANT copyright information</strong></span>: All content submitted to this forum is released under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>. By checking the following box you agree to this condition of use.  If you are not willing to release all content you submit under this license then you should not register.');
+_e('<strong>IMPORTANT copyright information</strong></span>: All content submitted to this forum is released under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>. By checking the following box you agree to this condition of use.  If you are not willing to release all content you submit under this license then you should not register.');
 ?>
-    </td>
-</tr>
-<tr>
-    <td colspan="2">
-        <input type="checkbox" name="terms_cond" /><sup>*</sup>:
+</div>
+<div style='margin: 2ex;'>
+    <input type="checkbox" name="terms_cond" /><sup>*</sup>:
 <?php
 _e('I agree to release <span style="text-decoration: underline;">anything</span> I submit to this forum under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>.');
 if ( $terms_cond === false ) {
     echo "<div><span style='color: red;'>" . __('You must accept the licensing terms in order to regsiter.') . "</span></div>";
 }
 ?>
-    </td>
-</tr>
-</table>
-<p><sup>*</sup><?php _e('These items are <span class="required">required</span>.') ?></p>
+</div>
 
 <?php do_action('extra_profile_info', $user); ?>
 

@@ -105,11 +105,13 @@ HTML;
 
 login_form();
 
-echo "        </div>";
-
 if ( is_bb_profile() ) {
     profile_menu();
 }
+
+echo "        </div>";
+
+
 
 ?>
 <div id="main-content">

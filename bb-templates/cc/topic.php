@@ -1,6 +1,7 @@
 <?php bb_get_header(); ?>
 
-<h3 class="bbcrumb"><a href="<?php bb_option('uri'); ?>"><?php bb_option('name'); ?></a><?php bb_forum_bread_crumb(); ?></h3>
+<h3 class="bbcrumb topiccrumb"><a href="<?php bb_option('uri'); ?>"><?php bb_option('name'); ?></a><?php bb_forum_bread_crumb(); ?></h3>
+
 <div class="infobox">
 
 <div id="topic-info">
@@ -16,6 +17,7 @@
 <?php if ( bb_is_user_logged_in() ) : $class = 0 === is_user_favorite( bb_get_current_user_info( 'id' ) ) ? ' class="is-not-favorite"' : ''; ?>
 	<li<?php echo $class;?> id="favorite-toggle"><?php user_favorites_link() ?></li>
 <?php endif; do_action('topicmeta'); ?>
+
 </ul>
 </div>
 

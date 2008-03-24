@@ -104,7 +104,7 @@ blockquote { padding: 5px 5px 5px 10px; margin: 5px 5px 5px 3px; font-style: ita
 .cc-actions span.option { color: #fff; font-size: 1.8em; font-weight: bold; margin-top: 15px; margin-bottom: 0 !important; padding: 0 !important; display: block; }
 .cc-actions img { margin-right: 10px; float: left; }
 a.cc-actions, a.cc-actions:link { display: block; float: right; width: 227px; margin: 0; padding: 10px 0 11px 10px; color: #fff; text-decoration: none; }
-a.cc-actions:hover, #header-main .active a:link { background: url('/images/header-main-hover-b.png') repeat-x bottom left; text-decoration: none; }
+a.cc-actions:hover, #header-main .active a:link { background: url('images/header-main-hover-b.png') repeat-x bottom left; text-decoration: none; }
 
 
 #splash-menu h3 { display: inline; margin: 0 25px 0 0; }

@@ -215,6 +215,7 @@ form.login input {
 
 .threadauthor small { font: 11px Verdana, Arial, Helvetica, sans-serif; }
 
+#thread .post { padding-top: 0.25em; }
 
 #thread .post blockquote {
 	margin: 0 0 0 4ex;

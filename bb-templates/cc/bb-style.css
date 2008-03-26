@@ -264,7 +264,9 @@ textarea {
 	padding-bottom: 10px;
 }
 
-.submit { text-align: right; }
+.submit { text-align: right; margin-top: 0.5em;}
+
+.submit input { font-size: 85%;}
 
 .topiclink { display: block; }
 

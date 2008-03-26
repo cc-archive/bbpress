@@ -108,8 +108,8 @@ login_form();
 if ( is_bb_profile() ) {
     profile_menu();
 }
-
-echo "        </div>";
+include("search-form.php");
+echo "    </div>";
 
 
 

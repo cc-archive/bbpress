@@ -15,7 +15,8 @@
 <tr class="error">
 <th scope="row"><?php _e('Username:'); ?></th>
 <td><input name="user_login" type="text" id="user_login" size="30" maxlength="30" /><br />
-<?php _e('Your username was not valid, please try again'); ?></td>
+<span style='color: red;'>
+<?php _e('Your username was not valid, please try again'); ?></span></td>
 </tr>
 <?php else : ?>
 <tr class="required">
@@ -28,10 +29,12 @@
   <th scope="row"><?php echo $label[1]; ?>:</th>
   <td><input name="<?php echo $key; ?>" type="text" id="<?php echo $key; ?>" size="30" maxlength="140" value="<?php echo $$key; ?>" /><?php
 if ( $$key === false ) :
+    echo "<span style='color: red;'>\n";
 	if ( $key == 'user_email' )
 		_e('<br />There was a problem with your email; please check it.');
 	else
 		_e('<br />The above field is required.');
+    echo "</span>\n";
 endif;
 ?></td>
 </tr>

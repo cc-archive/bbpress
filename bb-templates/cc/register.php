@@ -49,7 +49,7 @@ _e('<strong>IMPORTANT</strong> copyright information: All content submitted to t
 <?php
 _e('I agree to release <span style="text-decoration: underline;">everything</span> I submit to this forum under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>.');
 if ( $terms_cond === false ) {
-    echo "<div><span style='color: red;'>" . __('You must accept the licensing terms in order to regsiter.') . "</span></div>";
+    echo "<div><span style='color: red;'>" . __('You must accept the licensing terms in order to register.') . "</span></div>";
 }
 ?>
 </div>
@@ -62,7 +62,7 @@ echo recaptcha_get_html($bb->recaptcha_public_key);
 </div>
 <?php
 if ( $recaptcha_resp === false ) {
-    echo "<div><span style='color: red;'>" . __('The reCaptcha code you entered was not correct.') . "</span></div>";
+    echo "<div><span style='color: red;'>" . __('The reCaptcha words you entered were not correct.') . "</span></div>";
 }
 ?>
 

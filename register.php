@@ -17,6 +17,18 @@ if ($_POST) :
 	$user_url   = bb_fix_link( $_POST['user_url'] );
 	$_globals['terms_cond'] = isset( $_POST['terms_cond'] );
 
+    // Make sure the reCaptcha was filled out correctly
+    require_once( BBPATH . 'recaptcha/recaptchalib.php');
+    $recaptcha_resp = recaptcha_check_answer(
+        $bb->recaptcha_private_key,
+        $_SERVER["REMOTE_ADDR"],
+        $_POST["recaptcha_challenge_field"],
+        $_POST["recaptcha_response_field"]
+    );
+    if ( ! $recaptcha_resp->is_valid ) {
+        $_globals['recaptcha_resp'] = false;
+    }
+
 	foreach ( $profile_info_keys as $key => $label ) :
 		if ( is_string($$key) ) :
 			$$key = attribute_escape( $$key );
@@ -32,7 +44,7 @@ if ($_POST) :
 	if ( empty($user_login) || bb_user_exists($user_login) )
 		$user_safe = false;
 	
-	if ( $user_login && $user_safe && $user_email && !$bad_input && $_globals['terms_cond']) :
+	if ( $user_login && $user_safe && $user_email && !$bad_input && $_globals['terms_cond'] && $recaptcha_resp->is_valid) :
 		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) :
 			foreach( $profile_info_keys as $key => $label )
 				if ( strpos($key, 'user_') !== 0 && $$key !== '' )

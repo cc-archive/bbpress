@@ -54,6 +54,18 @@ if ( $terms_cond === false ) {
 ?>
 </div>
 
+<div style='margin: 2ex;'>
+<?php
+require_once( BBPATH . 'recaptcha/recaptchalib.php');
+echo recaptcha_get_html($bb->recaptcha_public_key);
+?>
+</div>
+<?php
+if ( $recaptcha_resp === false ) {
+    echo "<div><span style='color: red;'>" . __('The reCaptcha code you entered was not correct.') . "</span></div>";
+}
+?>
+
 <?php do_action('extra_profile_info', $user); ?>
 
 <p class="submit">

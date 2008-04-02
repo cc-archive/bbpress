@@ -24,6 +24,11 @@
 	</label>
 </p>
 <?php endif; ?>
+<div style='margin: 2ex;'>
+<?php
+_e('<span style="color: red;"><strong>IMPORTANT</strong></span> copyright reminder: All content submitted to this forum is released under a <a href="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 License</a>.  You should not submit a post if you are not willing to release it under this license.');
+?>
+</div>
 <p class="submit">
   <input type="submit" id="postformsub" name="Submit" value="<?php echo attribute_escape( __('Send Post &raquo;') ); ?>" tabindex="4" />
 </p>

@@ -14,14 +14,14 @@
 	<li><?php printf(__('<a href="%1$s">Latest reply</a> from %2$s'), attribute_escape( get_topic_last_post_link() ), get_topic_last_poster()) ?></li>
 <?php endif; ?>
 <?php if ( bb_is_user_logged_in() ) : $class = 0 === is_user_favorite( bb_get_current_user_info( 'id' ) ) ? ' class="is-not-favorite"' : ''; ?>
-	<li<?php echo $class;?> id="favorite-toggle"><?php user_favorites_link() ?></li>
+	<li<?php echo $class;?> id="favorite-toggle"><?php user_favorites_link(); ?></li>
 <?php endif; do_action('topicmeta'); ?>
 </ul>
 </div>
 
 <?php topic_tags(); ?>
 
-<br clear="all" />
+<div style="clear:both;"></div>
 </div>
 <?php do_action('under_title', ''); ?>
 <?php if ($posts) : ?>
@@ -39,7 +39,7 @@
 
 </ol>
 <div class="clearit"><br style=" clear: both;" /></div>
-<p><a href="<?php topic_rss_link(); ?>"><?php _e('RSS feed for this topic') ?></a></p>
+<p><a href="<?php topic_rss_link(); ?>" class="rss-link"><?php _e('RSS feed for this topic') ?></a></p>
 <div class="nav">
 <?php topic_pages(); ?>
 </div>

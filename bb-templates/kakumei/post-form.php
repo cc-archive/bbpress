@@ -19,7 +19,7 @@
 <?php endif; ?>
 <?php if ( is_bb_tag() || is_front() ) : ?>
 <p>
-	<label for="forum_id"><?php _e('Pick a section:'); ?>
+	<label for="forum-id"><?php _e('Pick a section:'); ?>
 		<?php bb_new_topic_forum_dropdown(); ?>
 	</label>
 </p>
@@ -28,4 +28,4 @@
   <input type="submit" id="postformsub" name="Submit" value="<?php echo attribute_escape( __('Send Post &raquo;') ); ?>" tabindex="4" />
 </p>
 
-<p><?php _e('Allowed markup:'); ?> <code><?php allowed_markup(); ?></code>. <br /><?php _e('Put code in between <code>`backticks`</code>.'); ?></p>
+<p><?php _e('Allowed markup:'); ?> <code><?php allowed_markup(); ?></code>. <br /><?php _e('You can also put code in between backtick ( <code>`</code> ) characters.'); ?></p>

@@ -17,7 +17,7 @@
 	<td><?php bb_topic_labels(); ?> <big><a href="<?php topic_link(); ?>"><?php topic_title(); ?></a></big></td>
 	<td class="num"><?php topic_posts(); ?></td>
 	<td class="num"><?php topic_last_poster(); ?></td>
-	<td class="num"><small><?php topic_time(); ?></small></td>
+	<td class="num"><a href="<?php topic_last_post_link(); ?>"><?php topic_time(); ?></a></td>
 </tr>
 <?php endforeach; endif; ?>
 
@@ -26,11 +26,11 @@
 	<td><?php bb_topic_labels(); ?> <a href="<?php topic_link(); ?>"><?php topic_title(); ?></a></td>
 	<td class="num"><?php topic_posts(); ?></td>
 	<td class="num"><?php topic_last_poster(); ?></td>
-	<td class="num"><small><?php topic_time(); ?></small></td>
+	<td class="num"><a href="<?php topic_last_post_link(); ?>"><?php topic_time(); ?></a></td>
 </tr>
 <?php endforeach; endif; ?>
 </table>
-<p><a href="<?php forum_rss_link(); ?>"><?php _e('RSS feed for this forum'); ?></a></p>
+<p><a href="<?php forum_rss_link(); ?>" class="rss-link"><?php _e('RSS feed for this forum'); ?></a></p>
 <div class="nav">
 <?php forum_pages(); ?>
 </div>

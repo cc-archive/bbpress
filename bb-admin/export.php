@@ -1,11 +1,22 @@
 <?php
-die('No thieving allowed.');
 
 require_once('../bb-load.php');
 require_once('admin-functions.php');
 
-if ( !bb_current_user_can( 'use_keys' ) )
-	bb_die( __('No thieving allowed.') );
+define('BB_EXPORT_USERS', 1);
+define('BB_EXPORT_FORUMS', 2);
+define('BB_EXPORT_TOPICS', 4);
+
+// Some example usage of the bitwise export levels (can be defined in bb-config.php)
+//define('BB_EXPORT_LEVEL', BB_EXPORT_USERS);
+//define('BB_EXPORT_LEVEL', BB_EXPORT_USERS + BB_EXPORT_FORUMS);
+//define('BB_EXPORT_LEVEL', BB_EXPORT_USERS + BB_EXPORT_FORUMS + BB_EXPORT_TOPICS);
+
+if ( !defined('BB_EXPORT_LEVEL') )
+	define('BB_EXPORT_LEVEL', 0);
+
+if ( !BB_EXPORT_LEVEL || !bb_current_user_can( 'import_export' ) )
+	bb_die( __('Either export is disabled or you are not allowed to export.') );
 
 // See bb_export_user for syntax
 function _bb_export_object( $object, $properties = null, $tabs = 1 ) {
@@ -54,9 +65,15 @@ function _bb_export_object( $object, $properties = null, $tabs = 1 ) {
 function _bb_translate_for_export( $translate, &$data ) {
 	$r = array();
 	foreach ( $translate as $prop => $export ) {
-		if ( '?' == $export{0} && !$data[$prop] || false === $export ) {
-			unset($data[$prop]);
+		if ( '?' == $export{0} ) {
 			$export = substr($export, 1);
+			if ( !$data[$prop] ) {
+				unset($data[$prop]);
+				continue;
+			}
+		}
+		if ( false === $export ) {
+			unset($data[$prop]);
 			continue;
 		}
 		$r[$export] = $data[$prop];
@@ -67,7 +84,7 @@ function _bb_translate_for_export( $translate, &$data ) {
 }
 
 function bb_export_user( $user_id ) {
-	global $bb_table_prefix;
+	global $bbdb;
 	if ( !$_user = bb_get_user( $user_id ) )
 		return;
 
@@ -97,7 +114,7 @@ function bb_export_user( $user_id ) {
 
 	$meta = array();
 	foreach ( $_user as $k => $v ) {
-		if ( 0 !== strpos($k, $bb_table_prefix) && isset($_user[$bb_table_prefix . $k]) )
+		if ( 0 !== strpos($k, $bbdb->prefix) && isset($_user[$bbdb->prefix . $k]) )
 			continue;
 		$meta[$k] = bb_maybe_serialize($v);
 	}
@@ -115,8 +132,9 @@ function bb_export_forum( $forum_id ) {
 	$_forum = get_object_vars( $_forum );
 
 	$translate = array(
-		'forum_name' => '!title',
-		'forum_desc' => '?!content'
+		'forum_name'   => '!title',
+		'forum_desc'   => '?!content',
+		'forum_parent' => '?parent'
 	);
 
 	$forum = _bb_translate_for_export( $translate, $_forum );
@@ -203,7 +221,7 @@ function bb_export_tag( $tag ) {
 
 function bb_export_topic_tags( $r, $topic_id ) {
 	global $topic_tag_cache;
-	if ( !$topic = get_topic( $topic_id ) )
+	if ( !get_topic( $topic_id ) )
 		return;
 
 	if ( !$tags = bb_get_topic_tags( $topic_id ) )
@@ -220,7 +238,7 @@ function bb_export_topic_tags( $r, $topic_id ) {
 
 function bb_export_topic_posts( $r, $topic_id ) {
 	global $bb_post_cache;
-	if ( !$topic = get_topic( $topic_id ) )
+	if ( !get_topic( $topic_id ) )
 		return;
 
 	$r .= "\n";
@@ -246,26 +264,32 @@ function bb_export() {
 
 	echo "<forums-data version='0.75'>\n";
 
-	$page = 1;
-	while ( ( $users = bb_user_search( array('page' => $page++) ) ) && !is_wp_error( $users ) ) {
-		foreach ( $users as $user )
-			echo bb_export_user( $user->ID );
-		$bb_user_cache = array(); // For the sake of memory
+	if (BB_EXPORT_LEVEL & BB_EXPORT_USERS) {
+		$page = 1;
+		while ( ( $users = bb_user_search( array('page' => $page++) ) ) && !is_wp_error( $users ) ) {
+			foreach ( $users as $user )
+				echo bb_export_user( $user->ID );
+			$bb_user_cache = array(); // For the sake of memory
+		}
+		unset($users, $user, $page);
 	}
-	unset($users, $user_ids, $user_id);
 
-	$forums = get_forums();
-	foreach ( $forums as $forum )
-		echo bb_export_forum( $forum->forum_id );
-	unset($forums, $forum);
-
-	$page = 1;
-	while ( false && $topics = get_latest_topics( 0, $page++ ) ) {
-		foreach ( $topics as $topic )
-			echo bb_export_topic( $topic->topic_id );
-		$bb_topic_cache = array();
+	if (BB_EXPORT_LEVEL & BB_EXPORT_FORUMS) {
+		$forums = get_forums();
+		foreach ( $forums as $forum )
+			echo bb_export_forum( $forum->forum_id );
+		unset($forums, $forum);
 	}
-	unset($topics, $topic, $page);
+
+	if (BB_EXPORT_LEVEL & BB_EXPORT_TOPICS) {
+		$page = 1;
+		while ( $topics = get_latest_topics( 0, $page++ ) ) {
+			foreach ( $topics as $topic )
+				echo bb_export_topic( $topic->topic_id );
+			$bb_topic_cache = array();
+		}
+		unset($topics, $topic, $page);
+	}
 
 	do_action( 'bb_export' );
 

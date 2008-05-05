@@ -1,6 +1,9 @@
 		<div class="threadauthor">
-			<p><strong><?php post_author_link(); ?></strong><br />
-			  <small><?php post_author_title(); ?></small></p>
+			<?php post_author_avatar(); ?>
+			<p>
+				<strong><?php post_author_link(); ?></strong><br />
+				<small><?php post_author_title(); ?></small>
+			</p>
 		</div>
 		
 		<div class="threadpost">

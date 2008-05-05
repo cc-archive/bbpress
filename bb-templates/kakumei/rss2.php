@@ -1,5 +1,5 @@
-<?php header('Content-Type: text/xml'); ?>
-<?php echo '<?xml version="1.0"?>'; ?>
+<?php header('Content-Type: text/xml; charset=UTF-8'); ?>
+<?php echo '<?xml version="1.0" encoding="UTF-8"?>'; ?>
 <!-- generator="bbPress" -->
 
 <rss version="2.0"
@@ -10,7 +10,7 @@
 <channel>
 <title><?php echo $title; ?></title>
 <link><?php bb_option('uri'); ?></link>
-<description><?php echo $title; ?></description>
+<description><?php echo $description; ?></description>
 <language>en</language>
 <pubDate><?php echo gmdate('D, d M Y H:i:s +0000'); ?></pubDate>
 

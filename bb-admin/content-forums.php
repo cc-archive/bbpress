@@ -8,7 +8,7 @@ if ( isset($_GET['action']) && 'delete' == $_GET['action'] ) {
 	$forum_to_delete = (int) $_GET['id'];
 	$deleted_forum = get_forum( $forum_to_delete );
 	if ( !$deleted_forum || $forums_count < 2 || !bb_current_user_can( 'delete_forum', $forum_to_delete ) )
-		wp_redirect( add_query_arg( array('action' => false, 'id' => false) ) );
+		bb_safe_redirect( add_query_arg( array('action' => false, 'id' => false) ) );
 }
 
 if ( isset($_GET['message']) ) {
@@ -36,7 +36,7 @@ bb_get_admin_header();
 <?php break; case 'delete' : ?>
 <div class="ays narrow">
 	<p><big><?php printf(__('Are you sure you want to delete the "<strong>%s</strong>" forum?'), $deleted_forum->forum_name); ?></big></p>
-	<p>This forum contains</p>
+	<p><?php _e('This forum contains'); ?></p>
 	<ul>
 		<li><?php printf(__ngettext('%d topic', '%d topics', $deleted_forum->topics), $deleted_forum->topics); ?></li>
 		<li><?php printf(__ngettext('%d post', '%d posts', $deleted_forum->posts), $deleted_forum->posts); ?></li>

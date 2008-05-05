@@ -1,7 +1,6 @@
 <?php
 require_once('../bb-load.php');
-require_once(BBPATH . 'bb-admin/admin-functions.php');
-bb_check_ajax_referer();
+require_once(BB_PATH . 'bb-admin/admin-functions.php');
 
 if ( !$bb_current_id = bb_get_current_user_info( 'id' ) )
 	die('-1');
@@ -16,26 +15,28 @@ function bb_grab_results() {
 	return;
 }
 
-function bb_get_out_now() { exit; }
-add_action('bb_shutdown', 'bb_get_out_now', -1);
+$id = (int) @$_POST['id'];
 
-switch ( $_POST['action'] ) :
-case 'add-tag' :
+switch ( $action = $_POST['action'] ) :
+case 'add-tag' : // $id is topic_id
+	if ( !bb_current_user_can('edit_tag_by_on', $bb_current_id, $id) )
+		die('-1');
+
+	bb_check_ajax_referer( "add-tag_$id" );
+
 	global $tag, $topic;
 	add_action('bb_tag_added', 'bb_grab_results', 10, 3);
 	add_action('bb_already_tagged', 'bb_grab_results', 10, 3);
-	$topic_id = (int) @$_POST['id'];
-	$tag_name =       @$_POST['tag'];
-	if ( !bb_current_user_can('edit_tag_by_on', $bb_current_id, $topic_id) )
-		die('-1');
+	$tag_name = @$_POST['tag'];
+	$tag_name = stripslashes( $tag_name );
 
-	$topic = get_topic( $topic_id );
+	$topic = get_topic( $id );
 	if ( !$topic )
 		die('0');
 
 	$tag_name = rawurldecode($tag_name);
 	$x = new WP_Ajax_Response();
-	foreach ( bb_add_topic_tags( $topic_id, $tag_name ) as $tag_id ) {
+	foreach ( bb_add_topic_tags( $id, $tag_name ) as $tag_id ) {
 		if ( !is_numeric($tag_id) || !$tag = bb_get_tag( $tag_id, bb_get_current_user_info( 'id' ), $topic->topic_id ) )
 			if ( !$tag = bb_get_tag( $tag_id ) )
 				continue;
@@ -51,7 +52,6 @@ case 'add-tag' :
 	break;
 
 case 'delete-tag' :
-	add_action('bb_rpe_tag_removed', 'bb_grab_results', 10, 3);
 	list($tag_id, $user_id) = explode('_', $_POST['id']);
 	$tag_id   = (int) $tag_id;
 	$user_id  = (int) $user_id;
@@ -59,6 +59,10 @@ case 'delete-tag' :
 
 	if ( !bb_current_user_can('edit_tag_by_on', $user_id, $topic_id) )
 		die('-1');
+
+	bb_check_ajax_referer( "remove-tag_$tag_id|$topic_id" );
+
+	add_action('bb_rpe_tag_removed', 'bb_grab_results', 10, 3);
 
 	$tag   = bb_get_tag( $tag_id );
 	$user  = bb_get_user( $user_id );
@@ -81,37 +85,41 @@ case 'dim-favorite' :
 	if ( !bb_current_user_can( 'edit_favorites_of', $user->ID ) )
 		die('-1');
 
+	bb_check_ajax_referer( "toggle-favorite_$topic_id" );
+
 	$is_fav = is_user_favorite( $user_id, $topic_id );
 
 	if ( 1 == $is_fav ) {
 		if ( bb_remove_user_favorite( $user_id, $topic_id ) )
 			die('1');
-	} elseif ( 0 === $is_fav ) {
+	} elseif ( false === $is_fav ) {
 		if ( bb_add_user_favorite( $user_id, $topic_id ) )
 			die('1');
 	}
 	break;
 
-case 'delete-post' :
-	$post_id = (int) $_POST['id'];
+case 'delete-post' : // $id is post_id
+	if ( !bb_current_user_can( 'delete_post', $id ) )
+		die('-1');
+
+	bb_check_ajax_referer( "delete-post_$id" );
+
 	$page = (int) $_POST['page'];
 	$last_mod = (int) $_POST['last_mod'];
 
-	if ( !bb_current_user_can( 'delete_post', $post_id ) )
-		die('-1');
-
-	$bb_post = bb_get_post ( $post_id );
+	$bb_post = bb_get_post( $id );
 
 	if ( !$bb_post )
 		die('0');
 
 	$topic = get_topic( $bb_post->topic_id );
 
-	if ( bb_delete_post( $post_id, 1 ) )
+	if ( bb_delete_post( $id, 1 ) )
 		die('1');
 	break;
 /*
 case 'add-post' : // Can put last_modified stuff back in later
+	bb_check_ajax_referer( $action );
 	$error = false;
 	$post_id = 0;
 	$topic_id = (int) $_POST['topic_id'];
@@ -124,8 +132,9 @@ case 'add-post' : // Can put last_modified stuff back in later
 		die('0');
 	if ( !topic_is_open( $topic_id ) )
 		$error = new WP_Error( 'topic-closed', __('This topic is closed.') );
-	if ( isset($bb_current_user->data->last_posted) && time() < $bb_current_user->data->last_posted + 30 && !bb_current_user_can('throttle') )
-		$error = new WP_Error( 'throttle-limit', __('Slow down!  You can only post every 30 seconds.') );
+	if ( $throttle_time = bb_get_option( 'throttle_time' ) )
+		if ( isset($bb_current_user->data->last_posted) && time() < $bb_current_user->data->last_posted + $throttle_time && !bb_current_user_can('throttle') )
+			$error = new WP_Error( 'throttle-limit', sprintf( __('Slow down!  You can only post every %d seconds.'), $throttle_time );
 
 	if ( !$error ) :
 		if ( !$post_id = bb_new_post( $topic_id, rawurldecode($_POST['post_content']) ) )
@@ -154,6 +163,8 @@ case 'add-forum' :
 	if ( !bb_current_user_can( 'manage_forums' ) )
 		die('-1');
 
+	bb_check_ajax_referer( $action );
+
 	if ( !$forum_id = bb_new_forum( $_POST ) )
 		die('0');
 
@@ -171,6 +182,8 @@ case 'add-forum' :
 case 'order-forums' :
 	if ( !bb_current_user_can( 'manage_forums' ) )
 		die('-1');
+
+	bb_check_ajax_referer( $action );
 
 	if ( !is_array($_POST['order']) )
 		die('0');
@@ -199,7 +212,8 @@ case 'order-forums' :
 
 default :
 	do_action( 'bb_ajax_' . $_POST['action'] );
-	die('0');
 	break;
 endswitch;
+
+die('0');
 ?>

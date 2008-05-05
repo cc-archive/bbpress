@@ -124,11 +124,26 @@ if ( isset($_POST['tags-tag-count']) && 1 == $_POST['tags-tag-count'] ) :
 	echo "\n\t</li>\n";
 endif;
 
+if ( isset($_POST['clean-favorites']) && 1 == $_POST['clean-favorites'] ):
+	echo "\t<li>\n";
+	if ( $users = $bbdb->get_results("SELECT user_id AS id, meta_value AS favorites FROM $bbdb->usermeta WHERE meta_key = 'favorites'") ) :
+		echo "\t\t" . __('Removing deleted topics from users\' favorites...') . "<br />\n";
+		$topics = $bbdb->get_col("SELECT topic_id FROM $bbdb->topics WHERE topic_status = '0'");
+		foreach ( $users as $user ) {
+			foreach ( explode(',', $user->favorites) as $favorite )
+				if ( !in_array($favorite, $topics) )
+					bb_remove_user_favorite( $user->id, $favorite );
+		}
+		unset($topics, $users, $user, $favorite);
+	endif;
+	echo "\t\t" . __('Done removing deleted topics from users\' favorites.');
+	echo "\n\t</li>\n";
+endif;
+
 bb_recount_list();
- if ( $recount_list )
-	foreach ( (array) $recount_list as $item )
-		if ( isset($item[2]) && isset($_POST[$item[0]]) && 1 == $_POST[$item[0]])
-			$item[2]();
+foreach ( (array) $recount_list as $item )
+	if ( isset($item[2]) && isset($_POST[$item[0]]) && 1 == $_POST[$item[0]] && is_callable($item[2]) )
+		call_user_func( $item[2] );
 
 echo "</ul>\n\n<p>\n\t" . __('Done recounting.  The process took') . "\n\t";
 printf(__('%1$d queries and %2$s seconds.'), $bbdb->num_queries, bb_timer_stop(0));

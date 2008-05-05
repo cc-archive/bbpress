@@ -1,14 +1,28 @@
 <?php
 
-define( 'BBPATH', dirname(__FILE__) . '/' );
+// Define BB_PATH as this files directory
+define( 'BB_PATH', dirname(__FILE__) . '/' );
 
+// Initialise $bb object
 $bb = new StdClass();
 
-if ( !file_exists( BBPATH . 'config.php') ) {
-	if ( !file_exists( dirname(BBPATH) . '/config.php') )
-		die("There doesn't seem to be a <code>config.php</code> file. I need this before we can get started. Open up <code>config-sample.php</code>, fill in your details, and save it as <code>config.php</code>.");
-	require_once( dirname(BBPATH) . '/config.php' );
-} else {
-	require_once( BBPATH . 'config.php');
+if ( file_exists( BB_PATH . 'bb-config.php') ) {
+	
+	// The config file resides in BB_PATH
+	require_once( BB_PATH . 'bb-config.php');
+	
+} elseif ( file_exists( dirname(BB_PATH) . '/bb-config.php') ) {
+	
+	// The config file resides one level below BB_PATH
+	require_once( dirname(BB_PATH) . '/bb-config.php' );
+	
+} elseif ( !defined('BB_INSTALLING') || !BB_INSTALLING ) {
+	
+	// The config file doesn't exist and we aren't on the installation page
+	
+	// Cut to the chase, go to the installer and use it to deal with errors
+	$install_uri = preg_replace('|(/bb-admin)?/[^/]+?$|', '/', $_SERVER['PHP_SELF']) . 'bb-admin/install.php';
+	header('Location: ' . $install_uri);
+	
 }
 ?>

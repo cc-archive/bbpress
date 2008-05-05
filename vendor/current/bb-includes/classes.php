@@ -26,6 +26,10 @@ class BB_Query {
 		$this->type = $type;
 		$this->parse_query($query, $id);
 
+		// Allow filter to abort query
+		if ( false === $this->query_vars )
+			return;
+
 		if ( 'post' == $type )
 			$this->generate_post_sql();
 		else
@@ -235,10 +239,12 @@ class BB_Query {
 			$this->query = $query;
 		}
 
-		$this->query_vars = $this->fill_query_vars($this->query_vars);
+		do_action_ref_array('bb_parse_query', array(&$this));
 
-		if ( !empty($query) )
-			do_action_ref_array('bb_parse_query', array(&$this));
+		if ( false === $this->query_vars )
+			return;
+
+		$this->query_vars = $this->fill_query_vars($this->query_vars);
 	}
 
 	// Reparse the query vars.
@@ -407,17 +413,19 @@ class BB_Query {
 		if ( false !== $q['tag_count'] )
 			$where .= $this->parse_value( 't.tag_count', $q['tag_count'] );
 
-		if ( $q['meta_key'] ) :
-			$q['meta_key'] = preg_replace('|[^a-z0-9_-]|i', '', $q['meta_key']);
+		if ( $q['meta_key'] && $q['meta_key'] = preg_replace('|[^a-z0-9_-]|i', '', $q['meta_key']) ) :
 			if ( '-' == substr($q['meta_key'], 0, 1) ) :
-				$join  .= " LEFT JOIN $bbdb->topicmeta AS tm ON ( t.topic_id = tm.topic_id AND tm.meta_key = '" . substr( $q[meta_key], 1 ) . "' )";
+				$join  .= " LEFT JOIN $bbdb->topicmeta AS tm ON ( t.topic_id = tm.topic_id AND tm.meta_key = '" . substr( $q['meta_key'], 1 ) . "' )";
 				$where .= " AND tm.meta_key IS NULL";
-			elseif ( $q['meta_value'] ) :
-				$join   = " JOIN $bbdb->topicmeta AS tm ON ( t.topic_id = tm.topic_id AND tm.meta_key = '$q[meta_key]' )";
-				$q['meta_value'] = bb_maybe_serialize( $q['meta_value'] );
-				if ( strpos( $q['meta_value'], 'NULL' ) !== false )
-					$join = " LEFT" . $join;
-				$where .= $this->parse_value( 'tm.meta_value', $q['meta_value'] );
+			else :
+				$join  .= " JOIN $bbdb->topicmeta AS tm ON ( t.topic_id = tm.topic_id AND tm.meta_key = '$q[meta_key]' )";
+
+				if ( $q['meta_value'] ) :
+					$q['meta_value'] = bb_maybe_serialize( $q['meta_value'] );
+					if ( strpos( $q['meta_value'], 'NULL' ) !== false )
+						$join = ' LEFT' . $join;
+					$where .= $this->parse_value( 'tm.meta_value', $q['meta_value'] );
+				endif;
 			endif;
 		endif;
 
@@ -437,7 +445,6 @@ class BB_Query {
 
 		$bits = compact( array('distinct', 'sql_calc_found_rows', 'fields', 'join', 'where', 'group_by', 'having', 'order_by') );
 		$this->request = $this->_filter_sql( $bits, "$bbdb->topics AS t" );
-
 		return $this->request;
 	}
 
@@ -645,7 +652,7 @@ class BB_Query {
 			$value = substr($value, 1);
 			$value = is_numeric($value) ? (float) $value : $bbdb->escape( $value );
 			return " AND $field $op '$value'";
-		elseif ( false === strpos($value, ',') ) :
+		elseif ( false === strpos($value, ',') && 'NULL' !== $value && '-NULL' !== $value ) :
 			$value = is_numeric($value) ? (float) $value : $bbdb->escape( $value );
 			return '-' == $op ? " AND $field != '" . substr($value, 1) . "'" : " AND $field = '$value'";
 		endif;
@@ -654,12 +661,12 @@ class BB_Query {
 		foreach ( explode(',', $value) as $v ) {
 			$v = is_numeric($v) ? (int) $v : $bbdb->escape( $v );
 			if ( '-' == substr($v, 0, 1) )
-				if ( $v == '-NULL' )
+				if ( $v === '-NULL' )
 					$not_null_flag = true;
 				else
 					$n[] = substr($v, 1);
 			else
-				if ( $v == 'NULL' )
+				if ( $v === 'NULL' )
 					$null_flag = true;
 				else
 					$y[] = $v;
@@ -687,7 +694,7 @@ class BB_Query {
 		} elseif ( $not_null_flag ) {
 			$r .= " AND $field IS NOT NULL";
 		}
-		
+
 		return $r;
 	}
 
@@ -785,7 +792,7 @@ class BB_Query_Form extends BB_Query {
 				$s_name = $s_id = 'search';
 			}
 			$r .= "\t<fieldset><legend>" . __('Search&#8230;') . "</legend>\n";
-			$r .= "\t\t<input name='$s_name' id='$s_id' type='text' class='text-input' value='$s_value'>";
+			$r .= "\t\t<input name='$s_name' id='$s_id' type='text' class='text-input' value='$s_value' />";
 			$r .= "\t</fieldset>\n\n";
 		}
 
@@ -798,21 +805,21 @@ class BB_Query_Form extends BB_Query {
 		if ( $tag ) {
 			$q_tag = attribute_escape( $q_tag );
 			$r .= "\t<fieldset><legend>" .  __('Tag&#8230;') . "</legend>\n";
-			$r .= "\t\t<input name='tag' id='topic-tag' type='text' class='text-input' value='$q_tag'>";
+			$r .= "\t\t<input name='tag' id='topic-tag' type='text' class='text-input' value='$q_tag' />";
 			$r .= "\t</fieldset>\n\n";
 		}
 
 		if ( $topic_author ) {
 			$q_topic_author = attribute_escape( $q_topic_author );
 			$r .= "\t<fieldset><legend>" . __('Topic Author&#8230;') . "</legend>\n";
-			$r .= "\t\t<input name='topic_author' id='topic-author' type='text' class='text-input' value='$q_topic_author'>";
+			$r .= "\t\t<input name='topic_author' id='topic-author' type='text' class='text-input' value='$q_topic_author' />";
 			$r .= "\t</fieldset>\n\n";
 		}
 
 		if ( $post_author ) {
 			$q_post_author = attribute_escape( $q_post_author );
 			$r .= "\t<fieldset><legend>" . __('Post Author&#8230;') . "</legend>\n";
-			$r .= "\t\t<input name='post_author' id='post-author' type='text' class='text-input' value='$q_post_author'>";
+			$r .= "\t\t<input name='post_author' id='post-author' type='text' class='text-input' value='$q_post_author' />";
 			$r .= "\t</fieldset>\n\n";
 		}
 
@@ -855,11 +862,13 @@ class BB_Query_Form extends BB_Query {
 		if ( $topic_title ) {
 			$q_topic_title = attribute_escape( $q_topic_title );
 			$r .= "\t<fieldset><legend>" . __('Title&#8230;') . "</legend>\n";
-			$r .= "\t\t<input name='topic_title' id='topic-title' type='text' class='text-input' value='$q_topic_title'>";
+			$r .= "\t\t<input name='topic_title' id='topic-title' type='text' class='text-input' value='$q_topic_title' />";
 			$r .= "\t</fieldset>\n\n";
 		}
 
-		$r .= "\t<input type='submit' class='button submit-input' value='$submit' id='$id-submit'>\n";
+		$r .= "\t<p class='submit'>\n";
+		$r .= "\t\t<input type='submit' class='button submit-input' value='$submit' id='$id-submit' />\n";
+		$r .= "\t</p>\n";
 		$r .= "</form>\n\n";
 
 		echo $r;

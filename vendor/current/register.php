@@ -1,7 +1,7 @@
 <?php
 require('./bb-load.php');
 
-require_once( BBPATH . BBINC . 'registration-functions.php');
+require_once( BB_PATH . BB_INC . 'registration-functions.php');
 
 $profile_info_keys = get_profile_info_keys();
 
@@ -10,29 +10,29 @@ $user_login = $user_safe = true;
 $_globals = array('profile_info_keys', 'user_safe', 'user_login', 'user_email', 'user_url', 'bad_input');
 $_globals = array_merge($_globals, array_keys($profile_info_keys));
 
-if ($_POST) :
+if ( $_POST && 'post' == strtolower($_SERVER['REQUEST_METHOD']) ) {
 	$_POST = stripslashes_deep( $_POST );
-	$user_login = bb_user_sanitize( $_POST['user_login'], true );
+	$user_login = sanitize_user( $_POST['user_login'], true );
 	$user_email = bb_verify_email( $_POST['user_email'] );
 	$user_url   = bb_fix_link( $_POST['user_url'] );
 
-	foreach ( $profile_info_keys as $key => $label ) :
-		if ( is_string($$key) ) :
+	foreach ( $profile_info_keys as $key => $label ) {
+		if ( is_string($$key) )
 			$$key = attribute_escape( $$key );
-		elseif ( is_null($$key) ) :
+		elseif ( is_null($$key) )
 			$$key = attribute_escape( $_POST[$key] );
-		endif;
-		if ( !$$key && $label[0] == 1 ) :
+
+		if ( !$$key && $label[0] == 1 ) {
 			$bad_input = true;
 			$$key = false;
-		endif;
-	endforeach;
+		}
+	}
 
 	if ( empty($user_login) || bb_user_exists($user_login) )
 		$user_safe = false;
 	
-	if ( $user_login && $user_safe && $user_email && !$bad_input) :
-		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) :
+	if ( $user_login && $user_safe && $user_email && !$bad_input) {
+		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) {
 			foreach( $profile_info_keys as $key => $label )
 				if ( strpos($key, 'user_') !== 0 && $$key !== '' )
 					bb_update_usermeta( $user_id, $key, $$key );
@@ -40,12 +40,12 @@ if ($_POST) :
 
 			bb_load_template( 'register-success.php', $_globals );
 			exit();	
-		endif;
-	endif;
-endif;
+		}
+	}
+}
 
 if ( isset( $_GET['user'] ) )
-	$user_login = bb_user_sanitize( $_GET['user'], true ) ;
+	$user_login = sanitize_user( $_GET['user'], true ) ;
 elseif ( isset( $_POST['user_login'] ) && !is_string($user_login) )
 	$user_login = '';
 

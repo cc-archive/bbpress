@@ -6,20 +6,21 @@ class BB_Cache {
 	var $flush_time = 172800; // 2 days
 
 	function BB_Cache() {
-		if ( false === bb_get_option( 'use_cache' ) || !is_writable(BBPATH . 'bb-cache/') )
+		if ( false === bb_get_option( 'use_cache' ) || !is_writable(BB_PATH . 'bb-cache/') )
 			$this->use_cache = false;
-		else	$this->flush_old();
+		else
+			$this->flush_old();
 	}
 
 	function get_user( $user_id, $use_cache = true ) {
 		global $bbdb, $bb_user_cache;
 		$user_id = (int) $user_id;
 
-		if ( $use_cache && $this->use_cache && file_exists(BBPATH . 'bb-cache/bb_user-' . $user_id) ) :
-			$bb_user_cache[$user_id] = $this->read_cache(BBPATH . 'bb-cache/bb_user-' . $user_id);
+		if ( $use_cache && $this->use_cache && file_exists(BB_PATH . 'bb-cache/bb_user-' . $user_id) ) :
+			$bb_user_cache[$user_id] = $this->read_cache(BB_PATH . 'bb-cache/bb_user-' . $user_id);
 			return $bb_user_cache[$user_id];
 		else :
-			if ( $user = $bbdb->get_row("SELECT * FROM $bbdb->users WHERE ID = $user_id") ) :
+			if ( $user = $bbdb->get_row( $bbdb->prepare( "SELECT * FROM $bbdb->users WHERE ID = %d", $user_id ) ) ) :
 				bb_append_meta( $user, 'user' );
 			else :
 				$bb_user_cache[$user_id] = false;
@@ -27,7 +28,7 @@ class BB_Cache {
 		endif;
 
 		if ( $this->use_cache && $bb_user_cache[$user_id] )
-			$this->write_cache(BBPATH . 'bb-cache/bb_user-' . $user_id, $bb_user_cache[$user_id]);
+			$this->write_cache(BB_PATH . 'bb-cache/bb_user-' . $user_id, $bb_user_cache[$user_id]);
 		return $bb_user_cache[$user_id];
 	}
 
@@ -37,25 +38,28 @@ class BB_Cache {
 
 	function append_user_meta( $user ) {
 		global $bb_user_cache;
-		if ( $this->use_cache && file_exists(BBPATH . 'bb-cache/bb_user-' . $user->ID) ) :
-			$bb_user_cache[$user->ID] = $this->read_cache(BBPATH . 'bb-cache/bb_user-' . $user->ID);
+		if ( $this->use_cache && file_exists(BB_PATH . 'bb-cache/bb_user-' . $user->ID) ) :
+			$bb_user_cache[$user->ID] = $this->read_cache(BB_PATH . 'bb-cache/bb_user-' . $user->ID);
 			return $bb_user_cache[$user->ID];
 		else :
 			$bb_user_cache[$user->ID] = bb_append_meta( $user, 'user' );
 		endif;
 
 		if ( $this->use_cache )
-			$this->write_cache(BBPATH . 'bb-cache/bb_user-' . $user->ID, $bb_user_cache[$user->ID]);
+			$this->write_cache(BB_PATH . 'bb-cache/bb_user-' . $user->ID, $bb_user_cache[$user->ID]);
 		return $bb_user_cache[$user->ID];
 	}
 
+	// NOT bbdb::prepared
 	function cache_users( $ids, $use_cache = true ) {
 		global $bbdb, $bb_user_cache;
 
+		$ids = array_map( 'intval', $ids );
+
 		if ( $use_cache && $this->use_cache ) :
 				foreach ( $ids as $i => $user_id ) :
-				if ( file_exists(BBPATH . 'bb-cache/bb_user-' . $user_id) ) :
-					$bb_user_cache[$user_id] = $this->read_cache(BBPATH . 'bb-cache/bb_user-' . $user_id);
+				if ( file_exists(BB_PATH . 'bb-cache/bb_user-' . $user_id) ) :
+					$bb_user_cache[$user_id] = $this->read_cache(BB_PATH . 'bb-cache/bb_user-' . $user_id);
 					unset($ids[$i]);
 				endif;
 			endforeach;
@@ -72,10 +76,11 @@ class BB_Cache {
 		if ( $this->use_cache )
 			foreach ( $ids as $user_id )
 				if ( $bb_user_cache[$user_id] )
-					$this->write_cache(BBPATH . 'bb-cache/bb_user-' . $user_id, $bb_user_cache[$user_id]);
+					$this->write_cache(BB_PATH . 'bb-cache/bb_user-' . $user_id, $bb_user_cache[$user_id]);
 		return;
 	}
 
+	// NOT bbdb::prepared
 	function get_topic( $topic_id, $use_cache = true ) {
 		global $bbdb, $bb_topic_cache;
 		$topic_id = (int) $topic_id;
@@ -84,8 +89,8 @@ class BB_Cache {
 		if ( 'AND topic_status = 0' != $where = apply_filters('get_topic_where', 'AND topic_status = 0') )
 			$normal = false;
 
-		if ( $use_cache && $this->use_cache && $normal && file_exists(BBPATH . 'bb-cache/bb_topic-' . $topic_id) ) :
-			$bb_topic_cache[$topic_id] = $this->read_cache(BBPATH . 'bb-cache/bb_topic-' . $topic_id);
+		if ( $use_cache && $this->use_cache && $normal && file_exists(BB_PATH . 'bb-cache/bb_topic-' . $topic_id) ) :
+			$bb_topic_cache[$topic_id] = $this->read_cache(BB_PATH . 'bb-cache/bb_topic-' . $topic_id);
 			return $bb_topic_cache[$topic_id];
 		else :
 			if ( $topic = $bbdb->get_row("SELECT * FROM $bbdb->topics WHERE topic_id = $topic_id $where") ) :
@@ -96,10 +101,11 @@ class BB_Cache {
 		endif;
 
 		if ( $this->use_cache && $normal && $bb_topic_cache[$topic_id] )
-			$this->write_cache(BBPATH . 'bb-cache/bb_topic-' . $topic_id, $bb_topic_cache[$topic_id]);
+			$this->write_cache(BB_PATH . 'bb-cache/bb_topic-' . $topic_id, $bb_topic_cache[$topic_id]);
 		return $bb_topic_cache[$topic_id];
 	}
 
+	// NOT bbdb::prepared
 	function get_thread( $topic_id, $page = 1, $reverse = 0 ) {
 		global $bbdb, $bb_post_cache;
 		$topic_id = (int) $topic_id;
@@ -109,11 +115,11 @@ class BB_Cache {
 		if ( 'AND post_status = 0' != $where = apply_filters('get_thread_where', 'AND post_status = 0') )
 			$normal = false;
 
-		$limit = bb_get_option('page_topics');
+		$limit = (int) bb_get_option('page_topics');
 		if ( 1 < $page )
 			$limit = ($limit * ($page - 1)) . ", $limit";
 		$order = $reverse ? 'DESC' : 'ASC';
-		$file = BBPATH . 'bb-cache/bb_thread-' . $topic_id . '-' . $page . '-' . $reverse;
+		$file = BB_PATH . 'bb-cache/bb_thread-' . $topic_id . '-' . $page . '-' . $reverse;
 
 		if ( $this->use_cache && $normal && file_exists($file) ) :
 			$thread = $this->read_cache($file);
@@ -129,6 +135,7 @@ class BB_Cache {
 		return $thread;
 	}
 
+	// NOT bbdb::prepared
 	function cache_posts( $query ) { // soft cache
 		global $bbdb, $bb_post_cache;
 		if ( $posts = (array) $bbdb->get_results( $query ) )
@@ -137,6 +144,7 @@ class BB_Cache {
 		return $posts;
 	}
 
+	// NOT bbdb::prepared
 	function get_forums() {
 		global $bbdb, $bb_forum_cache;
 
@@ -150,12 +158,12 @@ class BB_Cache {
 			return $forums;
 		}
 
-		if ( $this->use_cache && $normal && file_exists(BBPATH . 'bb-cache/bb_forums') )
-			return $this->read_cache(BBPATH . 'bb-cache/bb_forums');
+		if ( $this->use_cache && $normal && file_exists(BB_PATH . 'bb-cache/bb_forums') )
+			return $this->read_cache(BB_PATH . 'bb-cache/bb_forums');
 
 		$forums = (array) $bbdb->get_results("SELECT * FROM $bbdb->forums $where ORDER BY forum_order");
 		if ( $this->use_cache && $normal && $forums )
-			$this->write_cache(BBPATH . 'bb-cache/bb_forums', $forums);
+			$this->write_cache(BB_PATH . 'bb-cache/bb_forums', $forums);
 
 		$_forums = array();
 		foreach ( $forums as $forum )
@@ -177,14 +185,14 @@ class BB_Cache {
 		if ( $normal && $forum_id && isset($bb_forum_cache[$forum_id]) )
 			return $bb_forum_cache[$forum_id];
 
-		if ( $this->use_cache && $normal && file_exists(BBPATH . 'bb-cache/bb_forum-' . $forum_id) )
-			return $this->read_cache(BBPATH . 'bb-cache/bb_forum-' . $forum_id);
+		if ( $this->use_cache && $normal && file_exists(BB_PATH . 'bb-cache/bb_forum-' . $forum_id) )
+			return $this->read_cache(BB_PATH . 'bb-cache/bb_forum-' . $forum_id);
 
 		if ( $forum = $bbdb->get_row("SELECT * FROM $bbdb->forums WHERE forum_id = $forum_id $where") )
 			$bb_forum_cache[$forum_id] = $forum;
 
 		if ( $this->use_cache && $normal && $forum )
-			$this->write_cache(BBPATH . 'bb-cache/bb_forum-' . $forum_id, $forum);
+			$this->write_cache(BB_PATH . 'bb-cache/bb_forum-' . $forum_id, $forum);
 
 		return $forum;
 	}
@@ -210,7 +218,7 @@ class BB_Cache {
 			$id = (int) $id;
 			global $bb_user_cache;
 			unset($bb_user_cache[$id]);
-			$file = BBPATH . 'bb-cache/bb_user-' . $id;
+			$file = BB_PATH . 'bb-cache/bb_user-' . $id;
 			break;
 		case 'topic' :
 			if ( !is_numeric($id) )
@@ -218,12 +226,12 @@ class BB_Cache {
 			$id = (int) $id;
 			global $bb_topic_cache;
 			unset($bb_topic_cache[$id]);
-			$file = BBPATH . 'bb-cache/bb_topic-' . $id;
+			$file = BB_PATH . 'bb-cache/bb_topic-' . $id;
 			break;
 		case 'forums' :
 			global $bb_forum_cache;
 			unset($bb_forum_cache[-1]);
-			$file = BBPATH . 'bb-cache/bb_forums';
+			$file = BB_PATH . 'bb-cache/bb_forums';
 			break;
 		endswitch;
 
@@ -237,12 +245,12 @@ class BB_Cache {
 	function flush_many( $type, $id, $start = 0 ) {
 		switch ( $type ) :
 		case 'thread' :
-			$files = glob( BBPATH . 'bb-cache/bb_thread-' . $id . '-*');
+			$files = glob( BB_PATH . 'bb-cache/bb_thread-' . $id . '-*');
 			break;
 		case 'forum' :
 			global $bb_forum_cache;
 			unset($bb_forum_cache[$id], $bb_forum_cache[-1]);
-			$files = array(BBPATH . 'bb-cache/bb_forum-' . $id, BBPATH . 'bb-cache/bb_forums');
+			$files = array(BB_PATH . 'bb-cache/bb_forum-' . $id, BB_PATH . 'bb-cache/bb_forums');
 			break;
 		endswitch;
 
@@ -256,29 +264,29 @@ class BB_Cache {
 
 	function flush_old() {
 		$cache_data = 0;
-		if  ( file_exists(BBPATH . 'bb-cache/bb_cache_data') ) :
-			$cache_data = $this->read_cache(BBPATH . 'bb-cache/bb_cache_data');
+		if  ( file_exists(BB_PATH . 'bb-cache/bb_cache_data') ) :
+			$cache_data = $this->read_cache(BB_PATH . 'bb-cache/bb_cache_data');
 			if ( ++$cache_data > $this->flush_freq ) :
 				$cache_data = 0;
-				$handle = opendir(BBPATH . 'bb-cache');	//http://us2.php.net/manual/en/function.filemtime.php#42065
+				$handle = opendir(BB_PATH . 'bb-cache');	//http://us2.php.net/manual/en/function.filemtime.php#42065
 				while ( false !== ( $file = readdir($handle) ) ) {
-					if ( $file != "." && $file != ".." && is_file(BBPATH . "bb-cache/$file") ) { 
-						$Diff = time() - filemtime(BBPATH . "bb-cache/$file");
+					if ( $file != "." && $file != ".." && is_file(BB_PATH . "bb-cache/$file") ) { 
+						$Diff = time() - filemtime(BB_PATH . "bb-cache/$file");
 						if ( $Diff > $this->flush_time )
-							unlink(BBPATH . "bb-cache/$file");
+							unlink(BB_PATH . "bb-cache/$file");
 					}
 				}
 				closedir($handle);
 			endif;
 		endif;
-		$this->write_cache(BBPATH . 'bb-cache/bb_cache_data', $cache_data);
+		$this->write_cache(BB_PATH . 'bb-cache/bb_cache_data', $cache_data);
 	}
 
 	function flush_all() {
-		$handle = opendir( BBPATH . 'bb-cache' );
+		$handle = opendir( BB_PATH . 'bb-cache' );
 		while ( false !== ( $file = readdir($handle) ) )
 			if ( 0 !== strpos($file, '.') )
-				unlink(BBPATH . "bb-cache/$file");
+				unlink(BB_PATH . "bb-cache/$file");
 		closedir($handle);
 	}
 

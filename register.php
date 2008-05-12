@@ -29,8 +29,8 @@ if ( $_POST && 'post' == strtolower($_SERVER['REQUEST_METHOD']) ) {
         $_globals['recaptcha_resp'] = false;
     }
 
-	foreach ( $profile_info_keys as $key => $label ) :
-		if ( is_string($$key) ) :
+	foreach ( $profile_info_keys as $key => $label ) {
+		if ( is_string($$key) )
 			$$key = attribute_escape( $$key );
 		elseif ( is_null($$key) )
 			$$key = attribute_escape( $_POST[$key] );
@@ -44,8 +44,8 @@ if ( $_POST && 'post' == strtolower($_SERVER['REQUEST_METHOD']) ) {
 	if ( empty($user_login) || bb_user_exists($user_login) )
 		$user_safe = false;
 	
-	if ( $user_login && $user_safe && $user_email && !$bad_input && $_globals['terms_cond'] && $recaptcha_resp->is_valid) :
-		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) :
+	if ( $user_login && $user_safe && $user_email && !$bad_input && $_globals['terms_cond'] && $recaptcha_resp->is_valid) {
+		if ( $user_id = bb_new_user( $user_login, $user_email, $user_url ) ) {
 			foreach( $profile_info_keys as $key => $label )
 				if ( strpos($key, 'user_') !== 0 && $$key !== '' )
 					bb_update_usermeta( $user_id, $key, $$key );

@@ -72,7 +72,7 @@ echo <<<HTML
 <div id="header-wrapper">
 	<div id="header-main" class="box">
 		<span class="publish">
-			<a href="/license/" class="cc-actions">
+			<a href="http://creativecommons.org/license/" class="cc-actions">
 				<span class="img">
 					<img src="{$themeURI}/images/license-8.png" border="0" class="publish"/>
 				</span> 

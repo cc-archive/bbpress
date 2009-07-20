@@ -1,11 +1,17 @@
 <?php
+
+define( 'BB_IS_ADMIN', true );
+define( 'DOING_AJAX', true );
+
 require_once('../bb-load.php');
-require_once(BB_PATH . 'bb-admin/admin-functions.php');
+
+if ( !class_exists( 'WP_Ajax_Response' ) )
+	require_once( BACKPRESS_PATH . 'class.wp-ajax-response.php' );
+
+require_once( BB_PATH . 'bb-admin/includes/functions.bb-admin.php' );
 
 if ( !$bb_current_id = bb_get_current_user_info( 'id' ) )
 	die('-1');
-
-define('DOING_AJAX', true);
 
 function bb_grab_results() {
 	global $ajax_results;
@@ -37,15 +43,18 @@ case 'add-tag' : // $id is topic_id
 	$tag_name = rawurldecode($tag_name);
 	$x = new WP_Ajax_Response();
 	foreach ( bb_add_topic_tags( $id, $tag_name ) as $tag_id ) {
-		if ( !is_numeric($tag_id) || !$tag = bb_get_tag( $tag_id, bb_get_current_user_info( 'id' ), $topic->topic_id ) )
-			if ( !$tag = bb_get_tag( $tag_id ) )
+		if ( !is_numeric($tag_id) || !$tag = bb_get_tag( (int) $tag_id, bb_get_current_user_info( 'id' ), $topic->topic_id ) ) {
+			if ( !$tag = bb_get_tag( $tag_id ) ) {
 				continue;
+			}
+		}
+		$tag->user_id = bb_get_current_user_info( 'id' );
 		$tag_id_val = $tag->tag_id . '_' . $tag->user_id;
-		$tag->raw_tag = attribute_escape( $tag->raw_tag );
+		$tag->raw_tag = esc_attr( $tag->raw_tag );
 		$x->add( array(
 			'what' => 'tag',
 			'id' => $tag_id_val,
-			'data' => "<li id='tag-$tag_id_val'><a href='" . bb_get_tag_link() . "' rel='tag'>$tag->raw_tag</a> " . bb_get_tag_remove_link() . '</li>' 
+			'data' => _bb_list_tag_item( $tag, array( 'list_id' => 'tags-list', 'format' => 'list' ) )
 		) );
 	}
 	$x->send();
@@ -69,31 +78,28 @@ case 'delete-tag' :
 	$topic = get_topic ( $topic_id );
 	if ( !$tag || !$topic )
 		die('0');
-	if ( bb_remove_topic_tag( $tag_id, $user_id, $topic_id ) )
+	if ( false !== bb_remove_topic_tag( $tag_id, $user_id, $topic_id ) )
 		die('1');
 	break;
 
 case 'dim-favorite' :
-	$topic_id = (int) @$_POST['topic_id'];
-	$user_id  = (int) @$_POST['user_id'];
+	$user_id  = bb_get_current_user_info( 'id' );
 
-	$topic = get_topic( $topic_id );
-	$user = bb_get_user( $user_id );
-	if ( !$topic || !$user )
+	if ( !$topic = get_topic( $id ) )
 		die('0');
 
-	if ( !bb_current_user_can( 'edit_favorites_of', $user->ID ) )
+	if ( !bb_current_user_can( 'edit_favorites_of', $user_id ) )
 		die('-1');
 
-	bb_check_ajax_referer( "toggle-favorite_$topic_id" );
+	bb_check_ajax_referer( "toggle-favorite_$topic->topic_id" );
 
-	$is_fav = is_user_favorite( $user_id, $topic_id );
+	$is_fav = is_user_favorite( $user_id, $topic->topic_id );
 
 	if ( 1 == $is_fav ) {
-		if ( bb_remove_user_favorite( $user_id, $topic_id ) )
+		if ( bb_remove_user_favorite( $user_id, $topic->topic_id ) )
 			die('1');
 	} elseif ( false === $is_fav ) {
-		if ( bb_add_user_favorite( $user_id, $topic_id ) )
+		if ( bb_add_user_favorite( $user_id, $topic->topic_id ) )
 			die('1');
 	}
 	break;
@@ -104,17 +110,15 @@ case 'delete-post' : // $id is post_id
 
 	bb_check_ajax_referer( "delete-post_$id" );
 
-	$page = (int) $_POST['page'];
-	$last_mod = (int) $_POST['last_mod'];
+	$status = (int) $_POST['status'];
 
-	$bb_post = bb_get_post( $id );
-
-	if ( !$bb_post )
+	if ( !$bb_post = bb_get_post( $id ) )
 		die('0');
 
-	$topic = get_topic( $bb_post->topic_id );
+	if ( $status == $bb_post->post_status )
+		die('1'); // We're already there
 
-	if ( bb_delete_post( $id, 1 ) )
+	if ( bb_delete_post( $id, $status ) )
 		die('1');
 	break;
 /*
@@ -142,7 +146,7 @@ case 'add-post' : // Can put last_modified stuff back in later
 
 		$bb_post = bb_get_post( $post_id );
 
-		$new_page = get_page_number( $bb_post->post_position );
+		$new_page = bb_get_page_number( $bb_post->post_position );
 
 		ob_start();
 			echo "<li id='post-$post_id'>";
@@ -171,10 +175,30 @@ case 'add-forum' :
 	global $forums_count;
 	$forums_count = 2; // Hack
 
+	$data = bb_forum_row( $forum_id, false, true );
+
+	$forum = bb_get_forum( $forum_id );
+	if ( $forum->forum_parent ) {
+		$siblings = bb_get_forums( $forum->forum_parent );
+		$last_sibling = array_pop( $siblings );
+		if ( $last_sibling->forum_id == $forum_id )
+			$last_sibling = array_pop( $siblings );
+		if ( $last_sibling ) {
+			$position = "forum-$last_sibling->forum_id";
+		} else {
+			$position = "+forum-$forum->forum_parent";
+			$data = "<ul id='forum-root-$forum->forum_parent' class='list-block holder'>$data</ul>";
+		}
+	} else {
+		$position = 1;
+	}
+
 	$x = new WP_Ajax_Response( array(
 		'what' => 'forum',
 		'id' => $forum_id,
-		'data' => bb_forum_row( $forum_id, false, true )
+		'data' => $data,
+		'position' => $position,
+		'supplemental' => array( 'name' => $forum->forum_name )
 	) );
 	$x->send();
 	break;
@@ -192,10 +216,10 @@ case 'order-forums' :
 
 	$forums = array();
 
-	get_forums(); // cache
+	bb_get_forums(); // cache
 
 	foreach ( $_POST['order'] as $pos => $forum_id ) :
-		$forum = $bbdb->escape_deep( get_object_vars( get_forum( $forum_id ) ) );
+		$forum = $bbdb->escape_deep( get_object_vars( bb_get_forum( $forum_id ) ) );
 		$forum['forum_order'] = $pos;
 		$forums[(int) $forum_id] = $forum;
 	endforeach;

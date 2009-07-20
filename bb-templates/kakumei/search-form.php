@@ -1,10 +1,7 @@
-<form action="<?php bb_option('uri'); ?>search.php" method="get">
-	<p><?php _e('Search:'); ?>
-		<input type="text" size="38" maxlength="100" name="q" value="<?php echo attribute_escape( $q ); ?>" />
+<form class="search-form" role="search" action="<?php bb_uri('search.php', null, BB_URI_CONTEXT_FORM_ACTION); ?>" method="get">
+	<p>
+		<label class="hidden" for="q"><?php _e('Search:'); ?></label>
+		<input class="text" type="text" size="14" maxlength="100" name="q" id="q" />
+		<input class="submit" type="submit" value="<?php echo esc_attr__( 'Search &raquo;' ); ?>" />
 	</p>
-	<?php if( empty($q) ) : ?>
-	<p class="submit"><input type="submit" value="<?php echo attribute_escape( __('Search &raquo;') ); ?>" class="inputButton" /></p>
-	<?php else : ?>
-	<p class="submit"><input type="submit" value="<?php echo attribute_escape( __('Search again &raquo;') ); ?>" class="inputButton" /></p>
-	<?php endif; ?>
 </form>

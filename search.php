@@ -26,13 +26,12 @@ if ( $recent ) :
 	$topic_ids = array();
 	foreach ($recent as $bb_post) {
 		$topic_ids[] = (int) $bb_post->topic_id;
-		$bb_post_cache[$bb_post->post_id] = $bb_post;
 	}
 	$topic_ids = join($topic_ids);
 	if ( $topics = $bbdb->get_results("SELECT * FROM $bbdb->topics WHERE topic_id IN ($topic_ids)") )
 		$topics = bb_append_meta( $topics, 'topic' );
 endif;
 
-bb_load_template( 'search.php', array('q', 'recent', 'relevant') );
+bb_load_template( 'search.php', array('q', 'recent', 'relevant'), $q );
 
 ?>

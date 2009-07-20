@@ -1,7 +1,7 @@
 <?php
 
-require_once('../bb-load.php');
-require_once('admin-functions.php');
+require_once( '../bb-load.php' );
+require_once( BB_PATH . 'bb-admin/includes/functions.bb-admin.php' );
 
 define('BB_EXPORT_USERS', 1);
 define('BB_EXPORT_FORUMS', 2);
@@ -116,7 +116,7 @@ function bb_export_user( $user_id ) {
 	foreach ( $_user as $k => $v ) {
 		if ( 0 !== strpos($k, $bbdb->prefix) && isset($_user[$bbdb->prefix . $k]) )
 			continue;
-		$meta[$k] = bb_maybe_serialize($v);
+		$meta[$k] = maybe_serialize($v);
 	}
 	unset($_user, $k, $v);
 
@@ -126,7 +126,7 @@ function bb_export_user( $user_id ) {
 }
 
 function bb_export_forum( $forum_id ) {
-	if ( !$_forum = get_forum( $forum_id ) )
+	if ( !$_forum = bb_get_forum( $forum_id ) )
 		return;
 
 	$_forum = get_object_vars( $_forum );
@@ -175,7 +175,7 @@ function bb_export_topic( $topic_id ) {
 
 	$meta = array();
 	foreach ( $_topic as $k => $v )
-		$meta[$k] = bb_maybe_serialize($v);
+		$meta[$k] = maybe_serialize($v);
 	unset($_topic, $k, $v);
 
 	$topic['meta'] = $meta;
@@ -237,7 +237,6 @@ function bb_export_topic_tags( $r, $topic_id ) {
 }
 
 function bb_export_topic_posts( $r, $topic_id ) {
-	global $bb_post_cache;
 	if ( !get_topic( $topic_id ) )
 		return;
 
@@ -247,14 +246,13 @@ function bb_export_topic_posts( $r, $topic_id ) {
 	while ( $posts = get_thread( $topic_id, $page++ ) ) {
 		foreach ( $posts as $post )
 			$r .= bb_export_post( $post->post_id );
-		$bb_post_cache = array();
 	}
 
 	return $r;
 }
 
 function bb_export() {
-	global $bb, $bb_user_cache, $bb_topic_cache;
+	global $bb;
 
 	define( 'BB_EXPORTING', true );
 	do_action( 'bb_pre_export' );
@@ -269,13 +267,12 @@ function bb_export() {
 		while ( ( $users = bb_user_search( array('page' => $page++) ) ) && !is_wp_error( $users ) ) {
 			foreach ( $users as $user )
 				echo bb_export_user( $user->ID );
-			$bb_user_cache = array(); // For the sake of memory
 		}
 		unset($users, $user, $page);
 	}
 
 	if (BB_EXPORT_LEVEL & BB_EXPORT_FORUMS) {
-		$forums = get_forums();
+		$forums = bb_get_forums();
 		foreach ( $forums as $forum )
 			echo bb_export_forum( $forum->forum_id );
 		unset($forums, $forum);
@@ -286,7 +283,6 @@ function bb_export() {
 		while ( $topics = get_latest_topics( 0, $page++ ) ) {
 			foreach ( $topics as $topic )
 				echo bb_export_topic( $topic->topic_id );
-			$bb_topic_cache = array();
 		}
 		unset($topics, $topic, $page);
 	}
@@ -298,12 +294,12 @@ function bb_export() {
 
 add_filter( 'in_bb_export_object_topic', 'bb_export_topic_tags', 10, 2 );
 add_filter( 'in_bb_export_object_topic', 'bb_export_topic_posts', 10, 2 );
-add_filter( 'get_forum_where', 'no_where', 9999 );
-add_filter( 'get_forums_where', 'no_where', 9999 );
-add_filter( 'get_latest_topics_where', 'no_where', 9999 );
-add_filter( 'get_thread_where', 'no_where', 9999 );
-add_filter( 'get_user_where', 'no_where', 9999 );
-add_filter( 'cache_users_where', 'no_where', 9999 );
+add_filter( 'get_forum_where', 'bb_no_where', 9999 );
+add_filter( 'get_forums_where', 'bb_no_where', 9999 );
+add_filter( 'get_latest_topics_where', 'bb_no_where', 9999 );
+add_filter( 'get_thread_where', 'bb_no_where', 9999 );
+add_filter( 'get_user_where', 'bb_no_where', 9999 );
+add_filter( 'cache_users_where', 'bb_no_where', 9999 );
 
 bb_export();
 

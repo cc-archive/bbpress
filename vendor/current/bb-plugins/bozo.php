@@ -4,7 +4,7 @@ Plugin Name: Bozo Users
 Plugin URI: http://bbpress.org/
 Description: Allows moderators to mark certain users as a "bozo". Bozo users can post, but their content is only visible to themselves.
 Author: Michael Adams
-Version: 1.0
+Version: 1.1
 Author URI: http://blogwaffe.com/
 */
 
@@ -57,8 +57,13 @@ function bb_current_user_is_bozo( $topic_id = false ) {
 }
 
 function bb_bozo_pre_permalink() {
-	if ( is_topic() )
+	if ( bb_is_topic() )
 		add_filter( 'get_topic_where', 'bb_bozo_topics' );
+}
+
+function bb_bozo_post_permalink() {
+	if ( bb_is_topic() )
+		remove_filter( 'get_topic_where', 'bb_bozo_topics' );
 }
 
 function bb_bozo_latest_filter() {
@@ -83,12 +88,12 @@ function bb_bozo_profile_db_filter() {
 
 function bb_bozo_recount_topics() {
 	global $bbdb;
+	global $messages;
 	if ( isset($_POST['topic-bozo-posts']) && 1 == $_POST['topic-bozo-posts'] ):
-	echo "\t<li>\n";
-		$old = (array) $bbdb->get_col("SELECT topic_id FROM $bbdb->topicmeta WHERE meta_key = 'bozos'");
+		$old = (array) $bbdb->get_col("SELECT object_id FROM $bbdb->meta WHERE object_type = 'bb_topic' AND meta_key = 'bozos'");
 		$old = array_flip($old);
+		$messages[] = __('Counted the number of bozo posts in each topic');
 		if ( $topics = (array) $bbdb->get_col("SELECT topic_id, poster_id, COUNT(post_id) FROM $bbdb->posts WHERE post_status > 1 GROUP BY topic_id, poster_id") ) :
-			echo "\t\t" . __("Counting bozo posts...") . "<br />\n";
 			$unique_topics = array_unique($topics);
 			$posters = (array) $bbdb->get_col('', 1);
 			$counts = (array) $bbdb->get_col('', 2);
@@ -106,20 +111,19 @@ function bb_bozo_recount_topics() {
 		endif;
 		if ( $old ) :
 			$old = join(',', array_map('intval', array_flip($old)));
-			$bbdb->query("DELETE FROM $bbdb->topicmeta WHERE topic_id IN ($old) AND meta_key = 'bozos'");
+			$bbdb->query("DELETE FROM $bbdb->meta WHERE object_type = 'bb_topic' AND object_id IN ($old) AND meta_key = 'bozos'");
 		endif;
-		echo "\t\t" . __("Done counting bozo posts.");
-		echo "\n\t</li>";
 	endif;
 }
 
 function bb_bozo_recount_users() {
 	global $bbdb;
+	global $messages;
 	if ( isset($_POST['topics-replied-with-bozos']) && 1 == $_POST['topics-replied-with-bozos'] ) :
+		$messages[] = __('Counted each bozo user&#039;s total posts as well as the total topics to which they have replied');
 		if ( $users = (array) $bbdb->get_col("SELECT ID FROM $bbdb->users") ) :
 			$no_bozos = array();
 			$bozo_mkey = $bbdb->prefix . 'bozo_topics';
-			_e("Counting bozo topics for each user...\n");
 			foreach ( $users as $user ) :
 				$topics_replied = (int) $bbdb->get_var( $bbdb->prepare(
 					"SELECT COUNT(DISTINCT topic_id) FROM $bbdb->posts WHERE post_status = 0 AND poster_id = %d",
@@ -148,19 +152,24 @@ function bb_bozo_recount_users() {
 			endif;
 			unset($users, $user, $topics_replied, $bozo_keys, $bozo_values, $bozo_topics);
 		endif;
-		_e("Done counting bozo topics.\n\n");
 	endif;
 }
 
-function bb_bozo_post_del_class( $status ) {
-	if ( 1 < $status && bb_current_user_can('browse_deleted') )
+function bb_bozo_post_del_class( $classes, $post_id, $post )
+{
+	if ( 1 < $post->post_status && bb_current_user_can('browse_deleted') ) {
+		if ( $classes ) {
+			return $classes . ' bozo';
+		}
 		return 'bozo';
+	}
+	return $classes;
 }
 
 function bb_bozo_add_recount_list() {
 	global $recount_list;
-	$recount_list[20] = array('topics-replied-with-bozos', __('Count topics to which each user has replied and count each users&#039; bozo posts'), 'bb_bozo_recount_users');
-	$recount_list[21] = array('topic-bozo-posts', __('Count bozo posts on every topic'), 'bb_bozo_recount_topics');
+	$recount_list[20] = array('topics-replied-with-bozos', __('Count each bozo user&#039;s total posts as well as the total topics to which they have replied'), 'bb_bozo_recount_users');
+	$recount_list[21] = array('topic-bozo-posts', __('Count the number of bozo posts in each topic'), 'bb_bozo_recount_topics');
 	return;
 }
 
@@ -266,49 +275,89 @@ function bb_bozo_profile_admin_keys( $a ) {
 		''							// Default when not set
 	);
 	return $a;
-} 
-
-function bb_bozo_add_admin_page() {
-	global $bb_submenu;
-	$bb_submenu['users.php'][] = array(__('Bozos'), 'edit_users', 'bb_bozo_admin_page');
 }
 
-function bb_bozo_admin_page() {
-	class BB_Bozo_Users extends BB_Users_By_Role {
-		var $title = '';
 
-		function BB_Bozo_Users( $page = '' ) { // constructor
-			$this->raw_page = ( '' == $page ) ? false : (int) $page;
-			$this->page = (int) ( '' == $page ) ? 1 : $page;
-			$this->title = __('These users have been marked as bozos');
 
-			$this->prepare_query();
-			$this->query();
-			$this->do_paging();
-		}
+function bb_bozo_get_bozo_user_ids()
+{
+	global $bbdb;
+	$sql = "SELECT `user_id` FROM `$bbdb->usermeta` WHERE `meta_key` = 'is_bozo' AND `meta_value` = '1';";
+	$user_ids = $bbdb->get_col( $sql, 0 );
+	if ( is_wp_error( $user_ids ) || empty( $user_ids ) ) {
+		return false;
+	}
+	return $user_ids;
+}
 
-		function query() {
-			$this->results = bb_get_bozos( $this->page );
+function bb_bozo_user_search_description( $description, $h2_search, $h2_role, $user_search_object )
+{
+	if ( is_array( $user_search_object->roles ) && in_array( 'bozo', $user_search_object->roles ) ) {
+		return sprintf( '%1$s%2$s that are bozos', $h2_search, $h2_role );
+	}
+	return $description;
+}
+add_filter( 'bb_user_search_description', 'bb_bozo_user_search_description', 10, 4 );
 
-			if ( $this->results )
-				$this->total_users_for_query = bb_count_last_query();
-			else
-				$this->search_errors = new WP_Error('no_matching_users_found', __('No matching users were found!'));
+function bb_bozo_user_search_form_add_inputs( $r, $user_search_object )
+{
+	$checked = '';
+	if ( is_array( $user_search_object->roles ) && in_array( 'bozo', $user_search_object->roles ) ) {
+		$checked = ' checked="checked"';
+	}
+	
+	$r .= "\t" . '<div>' . "\n";
+	$r .= "\t\t" . '<label for="userbozo">' . __('Bozos only') . '</label>' . "\n";
+	$r .= "\t\t" . '<div>' . "\n";
+	$r .= "\t\t\t" . '<input class="checkbox-input" type="checkbox" name="userrole[]" id="userbozo" value="bozo"' . $checked . ' />' . "\n";
+	$r .= "\t\t" . '</div>' . "\n";
+	$r .= "\t" . '</div>' . "\n";
 
-			if ( is_wp_error( $this->search_errors ) )
-				bb_admin_notice( $this->search_errors );
-		}
+	return $r;
+}
+add_filter( 'bb_user_search_form_inputs', 'bb_bozo_user_search_form_add_inputs', 10, 2 );
+
+function bb_bozo_user_search_role_user_ids( $role_user_ids, $roles, $args )
+{
+	if ( !in_array( 'bozo', $roles ) ) {
+		return $role_user_ids;
 	}
 
-	$bozos = new BB_Bozo_Users( $_GET['userspage'] );
-	$bozos->display( false, bb_current_user_can( 'edit_users' ) );
+	$bozo_user_ids = bb_bozo_get_bozo_user_ids();
+
+	if ( 1 === count( $roles ) ) {
+		return $bozo_user_ids;
+	}
+
+	global $bbdb;
+	$role_meta_key = $bbdb->escape( $bbdb->prefix . 'capabilities' );
+	$role_sql_terms = array();
+	foreach ( $roles as $role ) {
+		if ( 'bozo' === $role ) {
+			continue;
+		}
+		$role_sql_terms[] = "`meta_value` LIKE '%" . $bbdb->escape( like_escape( $role ) ) . "%'";
+	}
+	$role_sql_terms = join( ' OR ', $role_sql_terms );
+	$role_sql = "SELECT `user_id` FROM `$bbdb->usermeta` WHERE `meta_key` = '$role_meta_key' AND ($role_sql_terms);";
+	$role_user_ids = $bbdb->get_col( $role_sql, 0 );
+	if ( is_wp_error( $role_user_ids ) || empty( $role_user_ids ) ) {
+		return array();
+	}
+
+	return array_intersect( $bozo_user_ids, $role_user_ids );
 }
+add_filter( 'bb_user_search_role_user_ids', 'bb_bozo_user_search_role_user_ids', 10, 3 );
+
+
+
 
 add_filter( 'pre_post_status', 'bb_bozo_pre_post_status', 5, 3 );
 add_action( 'bb_new_post', 'bb_bozo_new_post', 5 );
 add_action( 'bb_delete_post', 'bb_bozo_delete_post', 5, 3 );
 
 add_action( 'pre_permalink', 'bb_bozo_pre_permalink' );
+add_action( 'post_permalink', 'bb_bozo_post_permalink' );
 add_action( 'bb_index.php_pre_db', 'bb_bozo_latest_filter' );
 add_action( 'bb_forum.php_pre_db', 'bb_bozo_latest_filter' );
 add_action( 'bb_topic.php_pre_db', 'bb_bozo_topic_db_filter' );
@@ -317,9 +366,8 @@ add_action( 'bb_profile.php_pre_db', 'bb_bozo_profile_db_filter' );
 add_action( 'bb_recount_list', 'bb_bozo_add_recount_list' );
 add_action( 'topic_pages_add', 'bb_bozo_topic_pages_add' );
 
-add_action( 'post_del_class', 'bb_bozo_post_del_class' );
+add_filter( 'post_del_class', 'bb_bozo_post_del_class', 10, 3 );
 add_filter( 'get_topic_posts', 'bb_bozo_get_topic_posts' );
 
 add_filter( 'get_profile_admin_keys', 'bb_bozo_profile_admin_keys' );
-add_action( 'bb_admin_menu_generator', 'bb_bozo_add_admin_page' );
 ?>

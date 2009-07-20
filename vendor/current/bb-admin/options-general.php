@@ -1,17 +1,18 @@
 <?php
+
 require_once('admin.php');
 
-if ($_POST['action'] == 'update') {
+if ( 'post' == strtolower( $_SERVER['REQUEST_METHOD'] ) && $_POST['action'] == 'update' ) {
 	
 	bb_check_admin_referer( 'options-general-update' );
 	
 	foreach ( (array) $_POST as $option => $value ) {
-		if ( !in_array( $option, array('_wpnonce', '_wp_http_referer', 'action', 'submit') ) ) {
+		if ( !in_array( $option, array( '_wpnonce', '_wp_http_referer', 'action', 'submit' ) ) ) {
 			$option = trim( $option );
 			$value = is_array( $value ) ? $value : trim( $value );
 			$value = stripslashes_deep( $value );
-			if ($option == 'uri' && !empty($value)) {
-				$value = rtrim($value) . '/';
+			if ( $option == 'uri' && !empty( $value ) ) {
+				$value = rtrim( $value, " \t\n\r\0\x0B/" ) . '/';
 			}
 			if ( $value ) {
 				bb_update_option( $option, $value );
@@ -21,177 +22,223 @@ if ($_POST['action'] == 'update') {
 		}
 	}
 	
-	$goback = add_query_arg('updated', 'true', wp_get_referer());
-	bb_safe_redirect($goback);
-	
+	$goback = add_query_arg( 'updated', 'true', wp_get_referer() );
+	bb_safe_redirect( $goback );
+	exit;
 }
 
-if ($_GET['updated']) {
-	bb_admin_notice( __('Settings saved.') );
+if ( !empty( $_GET['updated'] ) ) {
+	bb_admin_notice( __( '<strong>Settings saved.</strong>' ) );
 }
+
+$general_options = array(
+	'name' => array(
+		'title' => __( 'Site title' ),
+		'class' => 'long',
+	),
+	'description' => array(
+		'title' => __( 'Tagline' ),
+		'class' => 'long',
+		'note' => __( 'In a few words, explain what this site is about.' )
+	),
+	'uri' => array(
+		'title' => __( 'bbPress address (URL)' ),
+		'class' => array('long', 'code'),
+		'note' => __( 'The full URL of your bbPress install.' ),
+	),
+	'from_email' => array(
+		'title' => __( 'E-mail address' ),
+		'note' => __( 'This address is used for admin purposes, like new user notification.' ),
+	)
+);
+
+$time_options = array(
+	'gmt_offset' => array(
+		'title' => __( 'Time zone' ),
+		'type' => 'select',
+		'options' => array(
+			'-12'   => '-12:00',
+			'-11.5' => '-11:30',
+			'-11'   => '-11:00',
+			'-10.5' => '-10:30',
+			'-10'   => '-10:00',
+			'-9.5'  => '-9:30',
+			'-9'    => '-9:00',
+			'-8.5'  => '-8:30',
+			'-8'    => '-8:00',
+			'-7.5'  => '-7:30',
+			'-7'    => '-7:00',
+			'-6.5'  => '-6:30',
+			'-6'    => '-6:00',
+			'-5.5'  => '-5:30',
+			'-5'    => '-5:00',
+			'-4.5'  => '-4:30',
+			'-4'    => '-4:00',
+			'-3.5'  => '-3:30',
+			'-3'    => '-3:00',
+			'-2.5'  => '-2:30',
+			'-2'    => '-2:00',
+			'-1.5'  => '-1:30',
+			'-1'    => '-1:00',
+			'-0.5'  => '-0:30',
+			'0'     => '',
+			'0.5'   => '+0:30',
+			'1'     => '+1:00',
+			'1.5'   => '+1:30',
+			'2'     => '+2:00',
+			'2.5'   => '+2:30',
+			'3'     => '+3:00',
+			'3.5'   => '+3:30',
+			'4'     => '+4:00',
+			'4.5'   => '+4:30',
+			'5'     => '+5:00',
+			'5.5'   => '+5:30',
+			'5.75'  => '+5:45',
+			'6'     => '+6:00',
+			'6.5'   => '+6:30',
+			'7'     => '+7:00',
+			'7.5'   => '+7:30',
+			'8'     => '+8:00',
+			'8.5'   => '+8:30',
+			'8.75'  => '+8:45',
+			'9'     => '+9:00',
+			'9.5'   => '+9:30',
+			'10'    => '+10:00',
+			'10.5'  => '+10:30',
+			'11'    => '+11:00',
+			'11.5'  => '+11:30',
+			'12'    => '+12:00',
+			'12.75' => '+12:45',
+			'13'    => '+13:00',
+			'13.75' => '+13:45',
+			'14'    => '+14:00'
+		),
+		'after' => __( 'hours' )
+	),
+	'datetime_format' => array(
+		'title' => __( 'Date and time format' ),
+		'class' => 'short',
+		'value' => bb_get_datetime_formatstring_i18n(),
+		'after' => bb_datetime_format_i18n( bb_current_time() ),
+		'note' => array(
+			__( '<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>.' ),
+			__( 'Click "Save Changes" to update sample output.' )
+		)
+	),
+	'date_format' => array(
+		'title' => __( 'Date format' ),
+		'class' => 'short',
+		'value' => bb_get_datetime_formatstring_i18n( 'date' ),
+		'after' => bb_datetime_format_i18n( bb_current_time(), 'date' )
+	)
+);
+
+if ( !$gmt_offset = bb_get_option( 'gmt_offset' ) ) {
+	$gmt_offset = 0;
+}
+
+if ( wp_timezone_supported() ) {
+	unset( $time_options['gmt_offset'] );
+
+	if ( !$timezone_string = bb_get_option( 'timezone_string' ) ) {
+		// set the Etc zone if no timezone string exists
+		$_gmt_offset = (integer) round( $gmt_offset );
+		if ( $_gmt_offset === 0 ) {
+			$timezone_string = 'Etc/UTC';
+		} elseif ( $_gmt_offset > 0 ) {
+			// Zoneinfo has these signed backwards to common convention
+			$timezone_string = 'Etc/GMT-' . abs( $_gmt_offset );
+		} else {
+			// Zoneinfo has these signed backwards to common convention
+			$timezone_string = 'Etc/GMT+' . abs( $_gmt_offset );
+		}
+		unset( $_gmt_offset );
+	}
+
+	// Build the new selector
+	$_time_options = array(
+		'timezone_string' => array(
+			'title' => __( 'Time zone' ),
+			'type' => 'select',
+			'options' => wp_timezone_choice( $timezone_string ), // This passes a string of html, which gets used verbatim
+			'note' => array(
+				__( 'Choose a city in the same time zone as you.' ),
+				sprintf( __( '<abbr title="Coordinated Universal Time">UTC</abbr> time is <code>%s</code>' ), bb_gmdate_i18n( bb_get_datetime_formatstring_i18n(), bb_current_time() ) ),
+				sprintf( __( 'Local time is <code>%s</code>' ), bb_datetime_format_i18n( bb_current_time() ) )
+			)
+		)
+	);
+
+	$_now = localtime( bb_current_time(), true );
+	if ( $now['tm_isdst'] ) {
+		$_time_options['timezone_string']['note'][] = __( 'This time zone is currently in daylight savings time.' );
+	} else {
+		$_time_options['timezone_string']['note'][] = __( 'This time zone is currently in standard time.' );
+	}
+
+	if ( function_exists( 'timezone_transitions_get' ) ) {
+		$timezone_object = new DateTimeZone( $timezone_string );
+		$found_transition = false;
+		foreach ( timezone_transitions_get( $timezone_object ) as $timezone_transition ) {
+			if ( $timezone_transition['ts'] > time() ) {
+				$note = $timezone_transition['isdst'] ? __('Daylight savings time begins on <code>%s</code>') : __('Standard time begins on <code>%s</code>');
+				$_time_options['timezone_string']['note'][] = sprintf( $note, bb_gmdate_i18n( bb_get_datetime_formatstring_i18n(), $timezone_transition['ts'], false ) );
+				break;
+			}
+		}
+	}
+
+	$time_options = array_merge( $_time_options, $time_options );
+
+} else {
+	// Tidy up the old style dropdown
+	$time_options['gmt_offset']['note'] = array(
+		1 => sprintf( __( '<abbr title="Coordinated Universal Time">UTC</abbr> %s is <code>%s</code>' ), $time_options['gmt_offset']['options'][$gmt_offset], bb_datetime_format_i18n( bb_current_time() ) ),
+		2 => __( 'Unfortunately, you have to manually update this for Daylight Savings Time.' )
+	);
+
+	if ( $gmt_offset ) {
+		$time_options['gmt_offset']['note'][0] = sprintf( __( '<abbr title="Coordinated Universal Time">UTC</abbr> time is <code>%s</code>' ), bb_gmdate_i18n( bb_get_datetime_formatstring_i18n(), bb_current_time(), true ) );
+		ksort($time_options['gmt_offset']['note']);
+	}
+
+	foreach ( $time_options['gmt_offset']['options'] as $_key => $_value ) {
+		$time_options['gmt_offset']['options'][$_key] = sprintf( __( 'UTC %s' ), $_value );
+	}
+}
+
+
+$bb_admin_body_class = ' bb-admin-settings';
 
 bb_get_admin_header();
+
 ?>
+
+<div class="wrap">
 
 <h2><?php _e('General Settings'); ?></h2>
+<?php do_action( 'bb_admin_notices' ); ?>
 
-<form class="options" method="post" action="<?php bb_option('uri'); ?>bb-admin/options-general.php">
+<form class="settings" method="post" action="<?php bb_uri( 'bb-admin/options-general.php', null, BB_URI_CONTEXT_FORM_ACTION + BB_URI_CONTEXT_BB_ADMIN ); ?>">
 	<fieldset>
-		<label for="name">
-			<?php _e('Site title:'); ?>
-		</label>
-		<div>
-			<input class="text" name="name" id="name" value="<?php bb_form_option('name'); ?>" />
-		</div>
-		<label for="description">
-			<?php _e('Site description:'); ?>
-		</label>
-		<div>
-			<input class="text" name="description" id="description" value="<?php bb_form_option('description'); ?>" />
-		</div>
-		<label for="uri">
-			<?php _e('bbPress address (URL):'); ?>
-		</label>
-		<div>
-			<input class="text" name="uri" id="uri" value="<?php bb_form_option('uri'); ?>" />
-			<p><?php _e('The full URL of your bbPress install.'); ?></p>
-		</div>
-		<label for="from_email">
-			<?php _e('E-mail address:') ?>
-		</label>
-		<div>
-			<input class="text" name="from_email" id="from_email" value="<?php bb_form_option('from_email'); ?>" />
-			<p><?php _e('Emails sent by the site will appear to come from this address.'); ?></p>
-		</div>
-		<label for="mod_rewrite">
-			<?php _e('Pretty permalink type:') ?>
-		</label>
-		<div>
-			<select name="mod_rewrite" id="mod_rewrite">
 <?php
-$selected = array();
-$selected[bb_get_option('mod_rewrite')] = ' selected="selected"';
+foreach ( $general_options as $option => $args ) {
+	bb_option_form_element( $option, $args );
+}
+foreach ( $time_options as $option => $args ) {
+	bb_option_form_element( $option, $args );
+}
 ?>
-				<option value="0"<?php echo $selected[0]; ?>><?php _e('None'); ?>&nbsp;&nbsp;&nbsp;.../forums.php?id=1</option>
-				<option value="1"<?php echo $selected[1]; ?>><?php _e('Numeric'); ?>&nbsp;&nbsp;&nbsp;.../forums/1</option>
-				<option value="slugs"<?php echo $selected['slugs']; ?>><?php _e('Name based'); ?>&nbsp;&nbsp;&nbsp;.../forums/first-forum</option>
-<?php
-unset($selected);
-?>
-			</select>
-		</div>
-		<label for="page_topics">
-			<?php _e('Items per page:') ?>
-		</label>
-		<div>
-			<input class="text" name="page_topics" id="page_topics" value="<?php bb_form_option('page_topics'); ?>" />
-			<p><?php _e('Number of topics, posts or tags to show per page.') ?></p>
-		</div>
-		<label for="edit_lock">
-			<?php _e('Lock post editing after:') ?>
-		</label>
-		<div>
-			<input class="text" name="edit_lock" id="edit_lock" value="<?php bb_form_option('edit_lock'); ?>" />
-			<?php _e('minutes') ?>
-			<p><?php _e('A user can edit a post for this many minutes after submitting.') ?></p>
-		</div>
 	</fieldset>
-	<fieldset>
-		<legend><?php _e('Date and Time') ?></legend>
-		<label>
-			<?php _e('<abbr title="Coordinated Universal Time">UTC</abbr> time is:') ?>
-		</label>
-		<div>
-			<?php echo gmdate(__('Y-m-d g:i:s a')); ?>
-		</div>
-		<label for="gmt_offset">
-			<?php _e('Times should differ from UTC by:') ?>
-		</label>
-		<div>
-			<input class="text" name="gmt_offset" id="gmt_offset" value="<?php bb_form_option('gmt_offset'); ?>" />
-			<?php _e('hours') ?>
-			<p><?php _e('Example: -7 for Pacific Daylight Time.'); ?></p>
-		</div>
-		<label for="datetime_format">
-			<?php _e('Date and time format:') ?>
-		</label>
-		<div>
-			<input class="text" name="datetime_format" id="datetime_format" value="<?php echo(attribute_escape(bb_get_datetime_formatstring_i18n())); ?>" />
-			<p><?php printf(__('Output: <strong>%s</strong>'), bb_datetime_format_i18n( bb_current_time() )); ?></p>
-		</div>
-		<label for="date_format">
-			<?php _e('Date format:') ?>
-		</label>
-		<div>
-			<input class="text" name="date_format" id="date_format" value="<?php echo(attribute_escape(bb_get_datetime_formatstring_i18n('date'))); ?>" />
-			<p><?php printf(__('Output: <strong>%s</strong>'), bb_datetime_format_i18n( bb_current_time(), 'date' )); ?></p>
-			<p><?php _e('Click "Update settings" to update sample output.') ?></p>
-			<p><?php _e('<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>.'); ?></p>
-		</div>
-	</fieldset>
-	<fieldset>
-		<legend><?php _e('Avatars'); ?></legend>
-		<p>
-			<?php _e('bbPress includes built-in support for <a href="http://gravatar.com/">Gravatars</a>, you can enable this feature here.'); ?>
-		</p>
-		<label for="avatars_show">
-			<?php _e('Show avatars:') ?>
-		</label>
-		<div>
-<?php
-$checked = array();
-$checked[bb_get_option('avatars_show')] = ' checked="checked"';
-?>
-			<input type="checkbox" class="checkbox" name="avatars_show" id="avatars_show" value="1"<?php echo $checked[1]; ?> />
-<?php
-unset($checked);
-?>
-		</div>
-		<label for="avatars_rating">
-			<?php _e('Gravatar maximum rating:'); ?>
-		</label>
-		<div>
-			<select name="avatars_rating" id="avatars_rating">
-<?php
-$selected = array();
-$selected[bb_get_option('avatars_rating')] = ' selected="selected"';
-?>
-				<option value="0"<?php echo $selected[0]; ?>><?php _e('None'); ?></option>
-				<option value="x"<?php echo $selected['x']; ?>><?php _e('X'); ?></option>
-				<option value="r"<?php echo $selected['r']; ?>><?php _e('R'); ?></option>
-				<option value="pg"<?php echo $selected['pg']; ?>><?php _e('PG'); ?></option>
-				<option value="g"<?php echo $selected['g']; ?>><?php _e('G'); ?></option>
-<?php
-unset($selected);
-?>
-			</select>
-			<p>
-				<img src="http://site.gravatar.com/images/gravatars/ratings/3.gif" alt="Rated X" style="height:30px; width:30px; float:left; margin-right:10px;" />
-				<?php _e('X rated gravatars may contain hardcore sexual imagery or extremely disturbing violence.'); ?>
-			</p>
-			<p>
-				<img src="http://site.gravatar.com/images/gravatars/ratings/2.gif" alt="Rated R" style="height:30px; width:30px; float:left; margin-right:10px;" />
-				<?php _e('R rated gravatars may contain such things as harsh profanity, intense violence, nudity, or hard drug use.'); ?>
-			</p>
-			<p>
-				<img src="http://site.gravatar.com/images/gravatars/ratings/1.gif" alt="Rated PG" style="height:30px; width:30px; float:left; margin-right:10px;" />
-				<?php _e('PG rated gravatars may contain rude gestures, provocatively dressed individuals, the lesser swear words, or mild violence.'); ?>
-			</p>
-			<p>
-				<img src="http://site.gravatar.com/images/gravatars/ratings/0.gif" alt="Rated G" style="height:30px; width:30px; float:left; margin-right:10px;" />
-				<?php _e('A G rated gravatar is suitable for display on all websites with any audience type.'); ?>
-			</p>
-		</div>
-	</fieldset>
-	<fieldset>
+	<fieldset class="submit">
 		<?php bb_nonce_field( 'options-general-update' ); ?>
 		<input type="hidden" name="action" value="update" />
-		<div class="spacer">
-			<input type="submit" name="submit" value="<?php _e('Update Settings &raquo;') ?>" />
-		</div>
+		<input class="submit" type="submit" name="submit" value="<?php _e('Save Changes') ?>" />
 	</fieldset>
 </form>
 
+</div>
+
 <?php
+
 bb_get_admin_footer();
-?>

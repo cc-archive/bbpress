@@ -1,7 +1,7 @@
 <?php
 require('./bb-load.php');
 
-bb_auth();
+bb_auth('logged_in');
 
 if ( $throttle_time = bb_get_option( 'throttle_time' ) )
 	if ( isset($bb_current_user->data->last_posted) && time() < $bb_current_user->data->last_posted + $throttle_time && !bb_current_user_can('throttle') )
@@ -40,6 +40,9 @@ if ( !topic_is_open( $topic_id ) )
 
 $post_id = bb_new_post( $topic_id, $_POST['post_content'] );
 
+$tags  = trim( $_POST['tags']  );
+bb_add_topic_tags( $topic_id, $tags );
+
 $link = get_post_link($post_id);
 
 $topic = get_topic( $topic_id, false );
@@ -47,11 +50,12 @@ $topic = get_topic( $topic_id, false );
 if ( $topic->topic_posts )
 	$link = add_query_arg( 'replies', $topic->topic_posts, $link );
 
-do_action( 'bb_post.php', $post_id );
+// This action used to be bb_post.php, changed to avoid conflict in bb_load_template()
+do_action( 'bb-post.php', $post_id );
 if ($post_id)
 	wp_redirect( $link );
 else
-	wp_redirect( bb_get_option( 'uri' ) );
+	wp_redirect( bb_get_uri(null, null, BB_URI_CONTEXT_HEADER) );
 exit;
 
 ?>

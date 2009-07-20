@@ -1,8 +1,8 @@
 <?php bb_get_header(); ?>
 
-<h3 class="bbcrumb"><a href="<?php bb_option('uri'); ?>"><?php bb_option('name'); ?></a> &raquo; <?php _e('Edit Profile'); ?></h3>
-<h2 id="userlogin"><?php echo get_user_name( $user->ID ); ?></h2>
-<form method="post" action="<?php profile_tab_link($user->ID, 'edit');  ?>">
+<div class="bbcrumb"><a href="<?php bb_uri(); ?>"><?php bb_option('name'); ?></a> &raquo; <a href="<?php user_profile_link( $user_id ); ?>"><?php echo get_user_display_name( $user_id ); ?></a> &raquo; <?php _e('Edit Profile'); ?></div>
+<h2 id="userlogin" role="main"><?php echo get_user_display_name( $user->ID ); ?> <small>(<?php echo get_user_name( $user->ID ); ?>)</small></h2>
+<form method="post" action="<?php profile_tab_link( $user->ID, 'edit', BB_URI_CONTEXT_FORM_ACTION + BB_URI_CONTEXT_BB_USER_FORMS ); ?>">
 <fieldset>
 <legend><?php _e('Profile Info'); ?></legend>
 <?php bb_profile_data_form(); ?>
@@ -23,7 +23,7 @@
 </fieldset>
 <?php endif; ?>
 <p class="submit right">
-  <input type="submit" name="Submit" value="<?php echo attribute_escape( __('Update Profile &raquo;') ); ?>" />
+  <input type="submit" name="Submit" value="<?php echo esc_attr__( 'Update Profile &raquo;' ); ?>" />
 </p>
 </form>
 <form method="post" action="<?php profile_tab_link($user->ID, 'edit');  ?>">

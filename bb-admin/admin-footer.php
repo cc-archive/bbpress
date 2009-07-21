@@ -1,13 +1,33 @@
-<div id="footer"><p><a href="http://bbpress.org/"><img src="../bb-images/bbpress.png" alt="bbPress" /></a><br />
-<?php bb_option( 'version' ); ?> <br /> 
-<a href="http://bbpress.org/documentation/"><?php _e('Documentation'); ?></a> &#8212; <a href="http://trac.bbpress.org/"><?php _e('Development'); ?></a> <br />
-<?php printf(__('%s seconds'), bb_number_format_i18n(bb_timer_stop(), 2)); ?>
-</p>
-</div>
+			</div>
+			<div class="clear"></div>
+			<!-- If you like showing off the fact that your server rocks -->
+			<!-- <p id="bbShowOff">
+<?php
+global $bbdb;
+printf(
+__( 'This page generated in %s seconds, using %d queries.' ),
+bb_number_format_i18n( bb_timer_stop(), 2 ),
+bb_number_format_i18n( $bbdb->num_queries )
+);
+?>
+			</p> -->
+			<div class="clear"></div>
+		</div>
+	</div>
+	<div id="bbFoot">
+		<p id="bbThanks">
+<?php
+printf(
+	__( 'Thank you for using <a href="%s">bbPress</a>. | <a href="%s">Documentation</a> | <a href="%s">Feedback</a>' ),
+	'http://bbpress.org/',
+	'http://bbpress.org/documentation/',
+	'http://bbpress.org/forums/forum/requests-and-feedback'
+);
+?>
+		</p>
+		<p id="bbVersion"><?php printf( __( 'Version %s' ), bb_get_option( 'version' ) ); ?></p>
+	</div>
 
-</div>
-
-<?php do_action('bb_admin_footer'); ?>
-
+	<?php do_action( 'bb_admin_footer' ); ?>
 </body>
 </html>

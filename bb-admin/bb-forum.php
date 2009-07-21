@@ -4,8 +4,10 @@ require_once('admin.php');
 if ( !bb_current_user_can('manage_forums') )
 	bb_die(__("You don't have the authority to mess with the forums."));
 
-if ( !isset($_POST['action']) )
-	wp_redirect( bb_get_option( 'uri' ) . 'bb-admin/content-forums.php' );
+if ( !isset($_POST['action']) ) {
+	wp_redirect( bb_get_uri('bb-admin/forums.php', null, BB_URI_CONTEXT_HEADER + BB_URI_CONTEXT_BB_ADMIN) );
+	exit;
+}
 
 $sent_from = wp_get_referer();
 
@@ -26,7 +28,7 @@ case 'add' :
 case 'update' :
 	bb_check_admin_referer( 'update-forum' );
 
-	if ( !$forums = get_forums() )
+	if ( !$forums = bb_get_forums() )
 		bb_die(__('No forums to update!'));
 	if ( (int) $_POST['forum_id'] && isset($_POST['forum_name']) && '' !== $_POST['forum_name'] )
 		bb_update_forum( $_POST );

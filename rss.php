@@ -1,46 +1,50 @@
 <?php
 require('./bb-load.php');
-require_once( BB_PATH . BB_INC . 'feed-functions.php');
 
 // Determine the type of feed and the id of the object
-if ( isset($_GET['view']) || get_path() == 'view' ) {
+if ( isset($_GET['view']) || bb_get_path() == 'view' ) {
 	
 	// View
 	$feed = 'view';
-	$feed_id = isset($_GET['view']) ? $_GET['view'] : get_path(2);
+	$feed_id = isset($_GET['view']) ? $_GET['view'] : bb_get_path(2);
 	
-} elseif ( isset($_GET['topic']) || get_path() == 'topic' ) {
+} elseif ( isset($_GET['topic']) || bb_get_path() == 'topic' ) {
 	
 	// Topic
 	$feed = 'topic';
-	$topic = get_topic(isset($_GET['topic']) ? $_GET['topic'] : get_path(2));
+	$topic = get_topic(isset($_GET['topic']) ? $_GET['topic'] : bb_get_path(2));
 	$feed_id = $topic->topic_id;
 	
-} elseif ( isset($_GET['profile']) || get_path() == 'profile' ) {
+} elseif ( isset($_GET['profile']) || bb_get_path() == 'profile' ) {
 	
 	// Profile
 	$feed = 'profile';
-	$feed_id = isset($_GET['profile']) ? $_GET['profile'] : get_path(2);
+	$feed_id = isset($_GET['profile']) ? $_GET['profile'] : bb_get_path(2);
 	
-} elseif ( isset($_GET['tag']) || get_path() == 'tag' ) {
+} elseif ( isset($_GET['tag']) || bb_get_path() == 'tags' ) {
 	
-	// Tag
-	$feed = 'tag';
-	$feed_id = isset($_GET['tag']) ? $_GET['tag'] : get_path(2);
+	if ( isset($_GET['topics']) || bb_get_path(3) == 'topics' ) {
+		// Tag recent topics
+		$feed = 'tag-topics';
+	} else {
+		// Tag recent posts
+		$feed = 'tag-posts';
+	}
+	$feed_id = isset($_GET['tag']) ? $_GET['tag'] : bb_get_path(2);
 	
-} elseif ( isset($_GET['forum']) || get_path() == 'forum' ) {
+} elseif ( isset($_GET['forum']) || bb_get_path() == 'forum' ) {
 	
-	if ( isset($_GET['topics']) || get_path(3) == 'topics' ) {
+	if ( isset($_GET['topics']) || bb_get_path(3) == 'topics' ) {
 		// Forum recent topics
 		$feed = 'forum-topics';
 	} else {
 		// Forum recent posts
 		$feed = 'forum-posts';
 	}
-	$forum = get_forum(isset($_GET['forum']) ? $_GET['forum'] : get_path(2));
+	$forum = bb_get_forum(isset($_GET['forum']) ? $_GET['forum'] : bb_get_path(2));
 	$feed_id = $forum->forum_id;
 	
-} elseif ( isset($_GET['topics']) || get_path() == 'topics' ) {
+} elseif ( isset($_GET['topics']) || bb_get_path() == 'topics' ) {
 	
 	// Recent topics
 	$feed = 'all-topics';
@@ -54,7 +58,7 @@ if ( isset($_GET['view']) || get_path() == 'view' ) {
 
 // Initialise the override variable
 $bb_db_override = false;
-do_action( 'bb_rss.php_pre_db', '' );
+do_action( 'bb_rss.php_pre_db' );
 
 if ( !$bb_db_override ) {
 	
@@ -77,7 +81,9 @@ if ( !$bb_db_override ) {
 				$posts[] = bb_get_first_post($topic->topic_id);
 			}
 			
-			$title = $bb_views[$feed_id]['title'];
+			$title = esc_html( sprintf( __( '%1$s View: %2$s' ), bb_get_option( 'name' ), $bb_views[$feed_id]['title'] ) );
+			$link = get_view_link($feed_id);
+			$link_self = bb_get_view_rss_link($feed_id);
 			break;
 		
 		case 'topic':
@@ -85,24 +91,52 @@ if ( !$bb_db_override ) {
 				die();
 			if ( !$posts = get_thread( $feed_id, 0, 1 ) )
 				die();
-			$title = wp_specialchars( bb_get_option( 'name' ) . ' ' . __('Topic') . ': ' . get_topic_title() );
+			$title = esc_html( sprintf( __( '%1$s Topic: %2$s' ), bb_get_option( 'name' ), get_topic_title() ) );
+			$link = get_topic_link($feed_id);
+			$link_self = get_topic_rss_link($feed_id);
 			break;
 		
 		case 'profile':
-			if ( !$user = bb_get_user( $feed_id ) )
-				if ( !$user = bb_get_user_by_nicename( $feed_id ) )
-					die();
-			if ( !$posts = get_user_favorites( $user->ID ) )
+			if ( bb_get_option( 'mod_rewrite' ) === 'slugs' ) {
+				$user = bb_get_user_by_nicename( $feed_id );
+			} else {
+				$user = bb_get_user( $feed_id );
+			}
+			if ( !$user ) {
 				die();
-			$title = wp_specialchars( bb_get_option( 'name' ) . ' ' . __('User Favorites') . ': ' . $user->user_login );
+			}
+			if ( !$posts = get_user_favorites( $user->ID ) ) {
+				die();
+			}
+			$title = esc_html( sprintf( __( '%1$s User Favorites: %2$s' ), bb_get_option( 'name' ), $user->user_login ) );
+			$link = bb_get_profile_link($feed_id);
+			$link_self = get_favorites_rss_link($feed_id);
 			break;
 		
-		case 'tag':
-			if ( !$tag = bb_get_tag_by_name( $feed_id ) )
+		case 'tag-topics':
+			if ( !$tag = bb_get_tag( $feed_id ) )
 				die();
-			if ( !$posts = get_tagged_topic_posts( $tag->tag_id, 0 ) )
+			if ( !$topics = get_tagged_topics( array( 'tag_id' => $tag->tag_id, 'page' => 0 ) ) )
 				die();
-			$title = wp_specialchars( bb_get_option( 'name' ) . ' ' . __('Tag') . ': ' . bb_get_tag_name() );
+			
+			$posts = array();
+			foreach ($topics as $topic) {
+				$posts[] = bb_get_first_post($topic->topic_id);
+			}
+			
+			$title = esc_html( sprintf( __( '%1$s Tag: %2$s - Recent Topics' ), bb_get_option( 'name' ), bb_get_tag_name() ) );
+			$link = bb_get_tag_link($feed_id);
+			$link_self = bb_get_tag_topics_rss_link($feed_id);
+			break;
+		
+		case 'tag-posts':
+			if ( !$tag = bb_get_tag( $feed_id ) )
+				die();
+			if ( !$posts = get_tagged_topic_posts( array( 'tag_id' => $tag->tag_id, 'page' => 0 ) ) )
+				die();
+			$title = esc_html( sprintf( __( '%1$s Tag: %2$s - Recent Posts' ), bb_get_option( 'name' ), bb_get_tag_name() ) );
+			$link = bb_get_tag_link($feed_id);
+			$link_self = bb_get_tag_posts_rss_link($feed_id);
 			break;
 		
 		case 'forum-topics':
@@ -114,13 +148,17 @@ if ( !$bb_db_override ) {
 				$posts[] = bb_get_first_post($topic->topic_id);
 			}
 			
-			$title = wp_specialchars( bb_get_option( 'name' ) ) . ': ' . __('Forum') . ': ' . get_forum_name( $feed_id ) . ' - ' . __('Recent Topics');
+			$title = esc_html( sprintf( __( '%1$s Forum: %2$s - Recent Topics' ), bb_get_option( 'name' ), get_forum_name( $feed_id ) ) );
+			$link = get_forum_link($feed_id);
+			$link_self = bb_get_forum_topics_rss_link($feed_id);
 			break;
 		
 		case 'forum-posts':
-			if ( !$posts = get_latest_forum_posts( $feed_id ) )
+			if ( !$posts = bb_get_latest_forum_posts( $feed_id ) )
 				die();
-			$title = wp_specialchars( bb_get_option( 'name' ) ) . ': ' . __('Forum') . ': ' . get_forum_name( $feed_id ) . ' - ' . __('Recent Posts');
+			$title = esc_html( sprintf( __( '%1$s Forum: %2$s - Recent Posts' ), bb_get_option( 'name' ), get_forum_name( $feed_id ) ) );
+			$link = get_forum_link($feed_id);
+			$link_self = bb_get_forum_posts_rss_link($feed_id);
 			break;
 		
 		// Get just the first post from the latest topics
@@ -133,29 +171,33 @@ if ( !$bb_db_override ) {
 				$posts[] = bb_get_first_post($topic->topic_id);
 			}
 			
-			$title = wp_specialchars( bb_get_option( 'name' ) ) . ': ' . __('Recent Topics');
+			$title = esc_html( sprintf( __( '%1$s: Recent Topics' ), bb_get_option( 'name' ) ) );
+			$link = bb_get_uri();
+			$link_self = bb_get_topics_rss_link();
 			break;
 		
 		// Get latest posts by default
 		case 'all-posts':
 		default:
-			if ( !$posts = get_latest_posts( 35 ) )
+			if ( !$posts = bb_get_latest_posts( 35 ) )
 				die();
-			$title = wp_specialchars( bb_get_option( 'name' ) ) . ': ' . __('Recent Posts');
+			$title = esc_html( sprintf( __( '%1$s: Recent Posts' ), bb_get_option( 'name' ) ) );
+			$link = bb_get_uri();
+			$link_self = bb_get_posts_rss_link();
 			break;
 	}
 }
 
-do_action( 'bb_rss.php', '' );
-
 bb_send_304( $posts[0]->post_time );
 
-if (!$description = bb_get_option('description')) {
+if (!$description = esc_html( bb_get_option('description') )) {
 	$description = $title;
 }
-$title = apply_filters( 'bb_title_rss', $title );
-$description = apply_filters( 'bb_description_rss', $description );
+$title = apply_filters( 'bb_title_rss', $title, $feed );
+$description = apply_filters( 'bb_description_rss', $description, $feed );
+$posts = apply_filters( 'bb_posts_rss', $posts, $feed );
+$link_self = apply_filters( 'bb_link_self_rss', $link_self, $feed );
 
-bb_load_template( 'rss2.php', array('bb_db_override', 'title', 'description') );
+bb_load_template( 'rss2.php', array('bb_db_override', 'title', 'description', 'link', 'link_self'), $feed );
 
 ?>

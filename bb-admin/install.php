@@ -9,53 +9,20 @@ define('BB_INSTALLING', true);
 require_once('../bb-load.php');
 
 // Instantiate the install class
-require_once(BB_PATH . 'bb-admin/class-install.php');
+require_once( BB_PATH . 'bb-admin/includes/class.bb-install.php' );
 $bb_install = new BB_Install(__FILE__);
-
-// Include some neccesary functions if not already there
-if ($bb_install->load_includes) {
-	require_once(BB_PATH . BB_INC . 'wp-functions.php');
-	require_once(BB_PATH . BB_INC . 'functions.php');
-	require_once(BB_PATH . BB_INC . 'kses.php');
-	require_once(BB_PATH . BB_INC . 'l10n.php');
-}
-
-$bb_install->get_languages();
-$bb_install->set_language();
-
-if ($bb_install->language) {
-	$locale = $bb_install->language;
-	unset($l10n['default']);
-	if ( !class_exists( 'gettext_reader' ) )
-		require_once( BB_PATH . BB_INC . 'gettext.php' );
-	if ( !class_exists( 'StreamReader' ) )
-		require_once( BB_PATH . BB_INC . 'streams.php' );
-}
-
-if ($bb_install->load_includes) {
-	require_once( BB_PATH . BB_INC . 'template-functions.php');
-}
-
-// Load the default text localization domain.
-load_default_textdomain();
-
-// Pull in locale data after loading text domain.
-require_once(BB_PATH . BB_INC . 'locale.php');
-$bb_locale = new BB_Locale();
-
-$bb_install->prepare_strings();
-$bb_install->check_prerequisites();
-$bb_install->check_configs();
-
-if ($bb_install->step > 0) {
-	$bb_install->set_step();
-	$bb_install->prepare_data();
-	$bb_install->process_form();
-}
 
 $bb_install->header();
 ?>
 		<script type="text/javascript" charset="utf-8">
+			function toggleNote(target) {
+				var targetObj = document.getElementById(target);
+				if (targetObj.style.display == 'none') {
+					targetObj.style.display = 'block';
+				} else {
+					targetObj.style.display = 'none';
+				}
+			}
 			function toggleBlock(toggleObj, target) {
 				var targetObj = document.getElementById(target);
 				if (toggleObj.checked) {
@@ -76,13 +43,28 @@ $bb_install->header();
 <?php
 switch ($bb_install->step) {
 	case -1:
-	case 0:
 		$bb_install->messages();
 		$bb_install->intro();
 		break;
-	
+
 	default:
-		$bb_install->sanitize_form_data();
+		$bb_install->step_header(0);
+
+		if ($bb_install->step === 0) {
+?>
+				<form action="install.php" method="post">
+<?php
+			$bb_install->messages();
+			$bb_install->get_language_selector();
+			$bb_install->input_buttons('forward_0_0', false, 1);
+?>
+				</form>
+<?php
+		} else {
+			$bb_install->sanitize_form_data();
+		}
+		
+		$bb_install->step_footer();
 		
 		$bb_install->step_header(1);
 		
@@ -91,21 +73,27 @@ switch ($bb_install->step) {
 			switch($bb_install->step_status[1]) {
 				case 'incomplete':
 ?>
-				<form action="install.php?step=1" method="post">
+				<form action="install.php" method="post">
+<?php
+					$bb_install->messages();
+?>
 					<fieldset>
 <?php
 					$bb_install->input_text('bbdb_name');
 					$bb_install->input_text('bbdb_user');
-					$bb_install->input_text('bbdb_password', 'password');
+					$bb_install->input_text('bbdb_password');
 					$bb_install->select_language();
 					$bb_install->input_toggle('toggle_1');
 ?>
-						<div class="toggle" id="toggle_1_target" style="display:<?php echo $bb_install->data[$bb_install->step]['form']['toggle_1']['display']; ?>;">
+						<div class="toggle" id="toggle_1_target" style="<?php echo esc_attr( 'display:' . $bb_install->data[$bb_install->step]['form']['toggle_1']['display'] ); ?>;">
 <?php
 					$bb_install->input_text('bbdb_host');
 					$bb_install->input_text('bbdb_charset');
 					$bb_install->input_text('bbdb_collate');
-					$bb_install->input_text('bb_secret_key');
+					//$bb_install->input_text('bb_auth_key');
+					//$bb_install->input_text('bb_secure_auth_key');
+					//$bb_install->input_text('bb_logged_in_key');
+					//$bb_install->input_text('bb_nonce_key');
 					$bb_install->input_text('bb_table_prefix', 'ltr');
 ?>
 						</div>
@@ -119,8 +107,9 @@ switch ($bb_install->step) {
 				
 				case 'manual':
 ?>
-				<form action="install.php?step=1" method="post">
+				<form action="install.php" method="post">
 <?php
+					$bb_install->messages();
 					$bb_install->hidden_step_inputs();
 ?>
 					<fieldset>
@@ -137,9 +126,10 @@ switch ($bb_install->step) {
 				
 				case 'complete':
 ?>
-				<form action="install.php?step=2" method="post">
+				<form action="install.php" method="post">
 <?php
-					$bb_install->input_buttons('forward_1_2');
+					$bb_install->messages();
+					$bb_install->input_buttons('forward_1_2', false, 2);
 ?>
 				</form>
 <?php
@@ -156,20 +146,23 @@ switch ($bb_install->step) {
 			switch ($bb_install->step_status[2]) {
 				case 'incomplete':
 ?>
-				<form action="install.php?step=2" method="post">
+				<form action="install.php" method="post">
+<?php
+					$bb_install->messages();
+?>
 					<fieldset>
 <?php
 					bb_nonce_field('bbpress-installer');
 					$bb_install->input_toggle('toggle_2_0');
 ?>
 					</fieldset>
-					<div class="toggle" id="toggle_2_0_target" style="display:<?php echo $bb_install->data[$bb_install->step]['form']['toggle_2_0']['display']; ?>;">
+					<div class="toggle" id="toggle_2_0_target" style="<?php echo esc_attr( 'display:' . $bb_install->data[$bb_install->step]['form']['toggle_2_0']['display'] ); ?>;">
 						<fieldset>
 <?php
 					$bb_install->input_toggle('toggle_2_1');
 ?>
 						</fieldset>
-						<div class="toggle" id="toggle_2_1_target" style="display:<?php echo $bb_install->data[$bb_install->step]['form']['toggle_2_1']['display']; ?>;">
+						<div class="toggle" id="toggle_2_1_target" style="<?php echo esc_attr( 'display:' . $bb_install->data[$bb_install->step]['form']['toggle_2_1']['display'] ); ?>;">
 							<fieldset>
 								<legend><?php _e('Cookies'); ?></legend>
 								<p><?php _e('Integrating cookies allows you and your users to login to either your bbPress or your WordPress site and be automatically logged into both.'); ?></p>
@@ -177,8 +170,12 @@ switch ($bb_install->step) {
 <?php
 					$bb_install->input_text('wp_siteurl', 'ltr');
 					$bb_install->input_text('wp_home', 'ltr');
-					$bb_install->input_text('wp_secret_key');
-					$bb_install->input_text('wp_secret');
+					$bb_install->input_text('wp_auth_key');
+					$bb_install->input_text('wp_auth_salt');
+					$bb_install->input_text('wp_secure_auth_key');
+					$bb_install->input_text('wp_secure_auth_salt');
+					$bb_install->input_text('wp_logged_in_key');
+					$bb_install->input_text('wp_logged_in_salt');
 ?>
 							</fieldset>
 						</div>
@@ -187,26 +184,28 @@ switch ($bb_install->step) {
 					$bb_install->input_toggle('toggle_2_2');
 ?>
 						</fieldset>
-						<div class="toggle" id="toggle_2_2_target" style="display:<?php echo $bb_install->data[$bb_install->step]['form']['toggle_2_2']['display']; ?>;">
+						<div class="toggle" id="toggle_2_2_target" style="<?php echo esc_attr( 'display:' . $bb_install->data[$bb_install->step]['form']['toggle_2_2']['display'] ); ?>;">
 							<fieldset>
 								<legend><?php _e('User database'); ?></legend>
 								<p><?php _e('Integrating your WordPress database user tables allows you to store user data in one location, instead of having separate user data for both bbPress and WordPress.'); ?></p>
 <?php
 					$bb_install->input_text('wp_table_prefix', 'ltr');
+					$bb_install->input_text('wordpress_mu_primary_blog_id', 'ltr');
 					$bb_install->input_toggle('toggle_2_3');
 ?>
 							</fieldset>
-							<div class="toggle" id="toggle_2_3_target" style="display:<?php echo $bb_install->data[$bb_install->step]['form']['toggle_2_3']['display']; ?>;">
+							<div class="toggle" id="toggle_2_3_target" style="<?php echo esc_attr( 'display:' . $bb_install->data[$bb_install->step]['form']['toggle_2_3']['display'] ); ?>;">
 								<fieldset>
 									<legend><?php _e('Separate user database settings'); ?></legend>
 									<p><?php _e('Most of the time these settings are <em>not</em> required. Look before you leap!'); ?></p>
-									<p><?php _e('All settings except for the character set must be specified.'); ?></p>
+									<p><?php _e('If required, then all settings except for the character set must be specified.'); ?></p>
 <?php
 					$bb_install->input_text('user_bbdb_name');
 					$bb_install->input_text('user_bbdb_user');
-					$bb_install->input_text('user_bbdb_password', 'password');
+					$bb_install->input_text('user_bbdb_password');
 					$bb_install->input_text('user_bbdb_host');
 					$bb_install->input_text('user_bbdb_charset');
+					$bb_install->input_text('user_bbdb_collate');
 ?>
 								</fieldset>
 								<fieldset>
@@ -227,14 +226,20 @@ switch ($bb_install->step) {
 				<script type="text/javascript" charset="utf-8">
 					function updateWordPressOptionURL () {
 						var siteURLInputValue = document.getElementById('wp_siteurl').value;
-						var outputAnchor = document.getElementById('getSecretOption');
+						if (siteURLInputValue && siteURLInputValue.substr(-1,1) != '/') {
+							siteURLInputValue += '/';
+						}
+						var authSaltAnchor = document.getElementById('getAuthSaltOption');
+						var secureAuthSaltAnchor = document.getElementById('getSecureAuthSaltOption');
+						var loggedInSaltAnchor = document.getElementById('getLoggedInSaltOption');
 						if (siteURLInputValue) {
-							if (siteURLInputValue.substr(-1,1) != '/') {
-								siteURLInputValue += '/';
-							}
-							outputAnchor.href = siteURLInputValue + 'wp-admin/options.php';
+							authSaltAnchor.href = siteURLInputValue + 'wp-admin/options.php';
+							secureAuthSaltAnchor.href = siteURLInputValue + 'wp-admin/options.php';
+							loggedInSaltAnchor.href = siteURLInputValue + 'wp-admin/options.php';
 						} else {
-							outputAnchor.href = '';
+							authSaltAnchor.href = '';
+							secureAuthSaltAnchor.href = '';
+							loggedInSaltAnchor.href = '';
 						}
 					}
 					var siteURLInput = document.getElementById('wp_siteurl');
@@ -251,7 +256,10 @@ switch ($bb_install->step) {
 				
 				case 'complete':
 ?>
-				<form action="install.php?step=3" method="post">
+				<form action="install.php" method="post">
+<?php
+					$bb_install->messages();
+?>
 					<fieldset>
 <?php
 					bb_nonce_field('bbpress-installer');
@@ -259,7 +267,7 @@ switch ($bb_install->step) {
 					</fieldset>
 <?php
 					$bb_install->hidden_step_inputs();
-					$bb_install->input_buttons('forward_2_1', 'back_2_1');
+					$bb_install->input_buttons('forward_2_1', 'back_2_1', 3);
 ?>
 				</form>
 <?php
@@ -276,7 +284,10 @@ switch ($bb_install->step) {
 			switch($bb_install->step_status[3]) {
 				case 'incomplete':
 ?>
-				<form action="install.php?step=3" method="post">
+				<form action="install.php" method="post">
+<?php
+					$bb_install->messages();
+?>
 					<fieldset>
 <?php
 					bb_nonce_field('bbpress-installer');
@@ -289,11 +300,7 @@ switch ($bb_install->step) {
 <?php
 					$bb_install->input_text('name');
 					$bb_install->input_text('uri', 'ltr');
-?>
-					</fieldset>
-					<fieldset>
-						<legend><?php _e('"Key master" account'); ?></legend>
-<?php
+
 					if ($bb_install->populate_keymaster_user_login_from_user_tables()) {
 						echo $bb_install->strings[3]['scripts']['changeKeymasterEmail'];
 						$bb_install->select('keymaster_user_login');
@@ -303,20 +310,13 @@ switch ($bb_install->step) {
 						$bb_install->input_text('keymaster_user_email', 'ltr');
 					}
 					$bb_install->input_hidden('keymaster_user_type');
-?>
-					</fieldset>
-<?php
+
 					if (!$bb_install->database_tables_are_installed()) {
-?>
-					<fieldset>
-						<legend><?php _e('First forum'); ?></legend>
-<?php
 						$bb_install->input_text('forum_name');
+					}
 ?>
 					</fieldset>
 <?php
-					}
-					
 					$bb_install->input_buttons('forward_3_0');
 ?>
 				</form>
@@ -325,7 +325,10 @@ switch ($bb_install->step) {
 				
 				case 'complete':
 ?>
-				<form action="install.php?step=4" method="post">
+				<form action="install.php" method="post">
+<?php
+					$bb_install->messages();
+?>
 					<fieldset>
 <?php
 					bb_nonce_field('bbpress-installer');
@@ -334,7 +337,7 @@ switch ($bb_install->step) {
 <?php
 					$bb_install->hidden_step_inputs(2);
 					$bb_install->hidden_step_inputs(); // The current step (3) is assumed here
-					$bb_install->input_buttons('forward_3_1', 'back_3_1');
+					$bb_install->input_buttons('forward_3_1', 'back_3_1', 4);
 ?>
 				</form>
 <?php
@@ -347,17 +350,18 @@ switch ($bb_install->step) {
 		if ($bb_install->step === 4) {
 		
 			$bb_install->step_header(4);
-			
+			$bb_install->messages();
+
 			if ($bb_install->step_status[4] == 'complete') {
 ?>
 				<p><?php _e('You can now log in with the following details:'); ?></p>
 				<dl>
 					<dt><?php _e('Username:'); ?></dt>
-					<dd><code><?php echo $bb_install->data[3]['form']['keymaster_user_login']['value']; ?></code></dd>
+					<dd><code><?php echo esc_html( $bb_install->data[3]['form']['keymaster_user_login']['value'] ); ?></code></dd>
 					<dt><?php _e('Password:'); ?></dt>
-					<dd><code><?php echo $bb_install->data[4]['form']['keymaster_user_password']['value']; ?></code></dd>
+					<dd><code><?php echo esc_html( $bb_install->data[4]['form']['keymaster_user_password']['value'] ); ?></code></dd>
 					<dt><?php _e('Site address:'); ?></dt>
-					<dd dir="ltr"><a href="<?php bb_option( 'uri' ); ?>"><?php bb_option( 'uri' ); ?></a></dd>
+					<dd dir="ltr"><a href="<?php bb_uri(); ?>"><?php bb_uri(null, null, BB_URI_CONTEXT_TEXT); ?></a></dd>
 				</dl>
 <?php
 				if ($bb_install->data[3]['form']['keymaster_user_type']['value'] == 'bbPress') {
@@ -367,7 +371,7 @@ switch ($bb_install->step) {
 				}
 			}
 ?>
-				<form action="<?php bb_option( 'uri' ); ?>">
+				<form action="<?php bb_uri(null, null, BB_URI_CONTEXT_FORM_ACTION); ?>">
 					<fieldset>
 <?php
 			$bb_install->input_toggle('toggle_4');
@@ -386,9 +390,9 @@ switch ($bb_install->step) {
 			$bb_install->step_footer();
 			
 		} else {
-?>
-			<div id="step4" class="closed"></div>
-<?php
+//? >
+//			<div id="step4" class="closed"></div>
+//<?php
 		}
 		
 		break;

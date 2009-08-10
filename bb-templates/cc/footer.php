@@ -14,6 +14,7 @@ echo <<<HTML
             <li><a href="http://creativecommons.org/weblog">Blog</a></li>
             <li><a href="http://creativecommons.org/policies">Policies</a></li>
             <li><a href="http://creativecommons.org/privacy">Privacy</a></li>
+            <li><a href="http://creativecommons.org/terms">Terms of Use</a></li>
             <li><a href="http://wiki.creativecommons.org/Developers">Developers</a></li>
             <li><a href="http://wiki.creativecommons.org/Events">Events</a></li>
             <li><a href="http://creativecommons.org/contact">Contact</a></li>

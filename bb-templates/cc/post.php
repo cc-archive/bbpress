@@ -1,5 +1,5 @@
 		<div class="threadauthor">
-			<p><strong><?php post_author_link(); ?></strong><br />
+			<p><strong><?php post_author(); ?></strong><br />
 			  <small><?php post_author_title(); ?></small></p>
 		</div>
 		

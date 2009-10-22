@@ -1,5 +1,9 @@
 		<div class="threadauthor">
-			<p><strong><?php post_author(); ?></strong><br />
+			<p><strong>
+			<?php
+				echo '<a href="' . esc_attr( get_user_profile_link( get_post_author_id( $post_id ) ) ) . '">';
+				post_author(); ?></a>
+			</strong><br />
 			  <small><?php post_author_title(); ?></small></p>
 		</div>
 		

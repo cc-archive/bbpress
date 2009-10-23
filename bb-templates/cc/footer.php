@@ -8,12 +8,16 @@ echo <<<HTML
 
 HTML;
 
+echo '    <div class="sideitem">';
     login_form();
+echo "   </div>";
 
     if ( is_bb_profile() ) {
         profile_menu();
     }
+    echo '    <div class="sideitem">';
     include("search-form.php");
+    echo "   </div>";
     echo "    </div>";
 
 echo <<<HTML

@@ -74,7 +74,22 @@ echo <<<HTML
     <div id="headerLogo">
       <h1><a href="{$bbHome}"><span>Creative Commons</span></a></h1>
     </div>
-    <?php require_once "nav.php"; ?>
+    <div id="headerNav">
+      <ul>
+        <!-- <li><em>Home</em></li> -->
+
+        <li><a href="http://creativecommons.org/about/">About</a></li>
+        <li><a href="http://creativecommons.org/weblog/">News</a></li>
+        <li><a href="http://support.creativecommons.org/">Donate</a></li>
+        <li><a href="http://wiki.creativecommons.org/FFAQ">FAQ</a></li>
+        <li><a href="http://wiki.creativecommons.org/">Wiki</a></li>
+        <li><a href="/http://creativecommons.orgprojects/">Projects</a></li>
+
+        <li><a href="http://support.creativecommons.org/store">Store</a></li>
+        <li class="helpLink" id="international_list"><a href="http://creativecommons.org/international/">International</a></li>
+      </ul>
+    </div>
+    
   </div>
 
   <div id="mainContent" class="box">

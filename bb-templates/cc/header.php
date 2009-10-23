@@ -69,49 +69,33 @@ echo <<<HTML
 <body id="$bbLocation">
 
 <a name="top"></a>
-<div id="header-wrapper">
-	<div id="header-main" class="box">
-		<span class="publish">
-			<a href="http://creativecommons.org/choose/" class="cc-actions">
-				<span class="img">
-					<img src="{$themeURI}/images/license-8.png" border="0" class="publish"/>
-				</span> 
-				<span class="option">License</span>Your Work
-			</a>
-		</span>
-		<span class="find">
-			<a href="http://search.creativecommons.org/" class="cc-actions">
-				<span class="img">
-					<img src="{$themeURI}/images/find-8.png" border="0"/>
-				</span>
-				<span class="option">Search</span>CC Licensed Work
-			</a>
-		</span>
-		<span class="logo">
-			<a href="{$bbHome}">
-				<span>
-					<img src="{$themeURI}/images/cc-title-8.png" alt="creative commons" id="cc-title" border="0"/>
-				</span>
-			</a>
-		</span>
-	</div>
-</div>
+<div id="globalWrapper">
+  <div id="headerWrapper" class="box">
+    <div id="headerLogo">
+      <h1><a href="{$bbHome}"><span>Creative Commons</span></a></h1>
+    </div>
+    <div id="headerNav">
+      <ul>
+        <!-- <li><em>Home</em></li> -->
 
-<div class="box">
-    <div id='content'>
-	<div id="sidebar">
+        <li><a href="http://creativecommons.org/about/">About</a></li>
+        <li><a href="http://creativecommons.org/weblog/">News</a></li>
+        <li><a href="http://support.creativecommons.org/">Donate</a></li>
+        <li><a href="http://wiki.creativecommons.org/FFAQ">FAQ</a></li>
+        <li><a href="http://wiki.creativecommons.org/">Wiki</a></li>
+        <li><a href="/http://creativecommons.orgprojects/">Projects</a></li>
 
+        <li><a href="http://support.creativecommons.org/store">Store</a></li>
+        <li class="helpLink" id="international_list"><a href="http://creativecommons.org/international/">International</a></li>
+      </ul>
+    </div>
+    
+  </div>
+
+  <div id="mainContent" class="box">
+    <div id="contentPrimary">
 HTML;
-
-login_form();
-
-if ( is_bb_profile() ) {
-    profile_menu();
-}
-include("search-form.php");
-echo "    </div>";
 
 
 
 ?>
-<div id="main-content">

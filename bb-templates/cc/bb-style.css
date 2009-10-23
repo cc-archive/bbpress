@@ -13,13 +13,6 @@ Author URI: http://avalonstar.com
 * { margin: 0; padding: 0; }
 */
 
-body {
-	background: #fff;
-	color: #333;
-	font: 12px 'Lucida Grande', Verdana, Tahoma, Arial;
-	line-height: 1.5em;
-}
-
 a { color: #2e6e15; text-decoration: none; }
 a:hover { color: #006400; }
 
@@ -411,7 +404,7 @@ fieldset p {
 	width: 19%;
 }
 
-#sidebar {
+/*#sidebar {
 	margin-top: 1em;
 	font-size: 0.95em;
 	width: 15%; 
@@ -422,7 +415,7 @@ fieldset p {
 	background-color: transparent;
 	padding-bottom: 0.7em;
 	border-bottom: 1px solid #e0e0e0;
-}
+}*/
 
 #footer {
 	clear: both;

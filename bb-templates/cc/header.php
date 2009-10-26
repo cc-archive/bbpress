@@ -34,6 +34,9 @@ echo <<<HTML
     <link href="{$themeURI}/style.css" rel="stylesheet" type="text/css" />
     <link href="{$themeURI}/bb-style.css" rel="stylesheet" type="text/css" />
     
+    <link href="http://creativecommons.org/wp-content/themes/cc5/support.css?5.1" rel="stylesheet" type="text/css" />
+    <link href="http://creativecommons.org/includes/total.css" rel="stylesheet" type="text/css" /> 
+    
 HTML;
 
 if ( 'rtl' == bb_get_option('text_direction') ) {

@@ -8,6 +8,8 @@ echo <<<HTML
 
 HTML;
 
+include "progress.php";
+
 echo '    <div class="sideitem">';
     login_form();
 echo "   </div>";

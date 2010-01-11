@@ -244,13 +244,13 @@ class WP_Users {
 				$sql_field = 'ID';
 				break;
 		}
-
+		
 		// Check if the numeric user IDs exist from caches
 		$cached_users = array();
 		if ( $from_cache ) {
 			$existant_user_ids = array();
 			$maybe_existant_user_ids = array();
-
+			
 			switch ( $by ) {
 				case 'login':
 				case 'email':
@@ -434,7 +434,7 @@ class WP_Users {
 			foreach ( array_keys($object) as $i )
 				$trans[$object[$i]->$id_field] =& $object[$i];
 			$ids = join(',', array_keys($trans));
-			if ( $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
+			if ( $ids && $metas = $this->db->get_results("SELECT $meta_field, meta_key, meta_value FROM {$this->db->$meta_table} WHERE $meta_field IN ($ids) /* WP_Users::append_meta */") ) {
 				usort( $metas, array(&$this, '_append_meta_sort') );
 				foreach ( $metas as $meta ) {
 					if ( empty( $meta->meta_key ) )
@@ -445,11 +445,11 @@ class WP_Users {
 				}
 			}
 			foreach ( array_keys($trans) as $i ) {
-				wp_cache_add( $i, $trans[$i], $cache_group );
+				wp_cache_set( $i, $trans[$i], $cache_group );
 				if ( 'users' == $cache_group ) {
-					wp_cache_add( $trans[$i]->user_login, $i, 'userlogins' );
-					wp_cache_add( $trans[$i]->user_email, $i, 'useremail' );
-					wp_cache_add( $trans[$i]->user_nicename, $i, 'usernicename' );
+					wp_cache_set( $trans[$i]->user_login, $i, 'userlogins' );
+					wp_cache_set( $trans[$i]->user_email, $i, 'useremail' );
+					wp_cache_set( $trans[$i]->user_nicename, $i, 'usernicename' );
 				}
 			}
 			return $object;
@@ -464,11 +464,11 @@ class WP_Users {
 						$object->{substr($meta->meta_key, strlen($this->db->prefix))} = maybe_unserialize( $meta->meta_value );
 				}
 			}
-			wp_cache_add( $object->$id_field, $object, $cache_group );
+			wp_cache_set( $object->$id_field, $object, $cache_group );
 			if ( 'users' == $cache_group ) {
-				wp_cache_add($object->user_login, $object->ID, 'userlogins');
-				wp_cache_add($object->user_email, $object->ID, 'useremail');
-				wp_cache_add($object->user_nicename, $object->ID, 'usernicename');
+				wp_cache_set($object->user_login, $object->ID, 'userlogins');
+				wp_cache_set($object->user_email, $object->ID, 'useremail');
+				wp_cache_set($object->user_nicename, $object->ID, 'usernicename');
 			}
 			return $object;
 		}

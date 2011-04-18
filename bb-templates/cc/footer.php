@@ -28,7 +28,7 @@ echo <<<HTML
         <ul>
             <li><a href="#top">Top</a>&nbsp;&nbsp;&nbsp;&nbsp;</li>
             <li><a href="http://creativecommons.org/weblog">Blog</a></li>
-            <li><a href="http://support.creativecommons.org/">Donate</a></li>
+            <li><a href="https://creativecommons.net/donate">Donate</a></li>
             <li><a href="http://creativecommons.org/policies">Policies</a></li>
             <li><a href="http://creativecommons.org/privacy">Privacy</a></li>
             <li><a href="http://creativecommons.org/terms">Terms of Use</a></li>
